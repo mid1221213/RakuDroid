@@ -172,7 +172,7 @@ clean-all: clean
 
 install: all
 	mkdir -p app
-	cp -a src/AndroidStudio/build.gradle app/
+	sed -e s/%%ARCH_JNI%%/$(JNI_ARCH)/ src/AndroidStudio/build.gradle.in >app/build.gradle
 	mkdir -p $(DROID_PREFIX)/java/$(PROJ_JAVA_PATH)
 	cp -a src/AndroidStudio/MainActivity.kt $(DROID_PREFIX)/java/$(PROJ_JAVA_PATH)/
 	mkdir -p $(DROID_PREFIX)/cpp
