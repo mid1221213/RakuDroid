@@ -76,7 +76,7 @@ DROID_LDFLAGS   = -shared -Wl,-e,start
 
 DROID_LIBS      = -L$(PREFIX_MOAR)/lib -lmoar -L$(ANDROID_NDK)/platforms/android-$(API_VERSION)/$(SDK_ARCH)/usr/lib -llog
 
-TO_CLEAN        = app $(RAKUDO)* MoarVM*
+TO_CLEAN        = app $(RAKUDO)* MoarVM* MyApplication.tgz
 
 export PATH    := $(ANDROID_NDK_BIN):$(ANDROID_SDK_PLT):${PATH}
 SHELL           = /bin/bash
