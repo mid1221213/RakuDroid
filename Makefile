@@ -83,6 +83,9 @@ SHELL           = /bin/bash
 
 .PHONY: all backup $(PREFIX_MOAR)/lib/libmoar.so
 
+none:
+	@echo Hmmm… I don\'t know what to make, and you neither… try \"make help\" or read README.md \(same thing\)
+
 help:
 	@cat README.md
 
