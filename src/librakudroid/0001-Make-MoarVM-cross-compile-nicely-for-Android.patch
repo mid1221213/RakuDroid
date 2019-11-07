@@ -1,17 +1,19 @@
-From f8dea807ce6aa70bcca459e345445242e40fbed8 Mon Sep 17 00:00:00 2001
+From 167e8a3438e8cb758eb5784bbd08c98ef4a218b0 Mon Sep 17 00:00:00 2001
 From: Alexandre Jousset <mid@gtmp.org>
 Date: Sun, 27 Oct 2019 00:13:27 +0200
 Subject: [PATCH] Make MoarVM cross-compile nicely for Android
 
+See https://github.com/mid1221213/RakuDroid
+(README.md) for explanations.
 ---
- Configure.pl      | 28 +++++++++++++---------
+ Configure.pl      | 26 +++++++++++---------
  build/Makefile.in |  3 +++
  build/probe.pm    | 41 +++++++++++++++++++++----------
  build/setup.pm    | 61 +++++++++++++++++++++++++++++++++++++++++++----
- 4 files changed, 105 insertions(+), 28 deletions(-)
+ 4 files changed, 103 insertions(+), 28 deletions(-)
 
 diff --git a/Configure.pl b/Configure.pl
-index 22c83ac2c..112865220 100755
+index 22c83ac2c..3a27bf17c 100755
 --- a/Configure.pl
 +++ b/Configure.pl
 @@ -479,7 +479,7 @@ $config{auxclean} = @auxfiles ? '$(RM) ' . join ' ', @auxfiles : '@:';
@@ -23,7 +25,7 @@ index 22c83ac2c..112865220 100755
      build::auto::detect_cross(\%config, \%defaults);
      build::probe::static_inline_cross(\%config, \%defaults);
      build::probe::unaligned_access_cross(\%config, \%defaults);
-@@ -751,18 +751,24 @@ sub setup_cross {
+@@ -751,18 +751,22 @@ sub setup_cross {
      hardfail("both --build and --host need to be specified")
          unless defined $build && defined $host;
  
@@ -32,7 +34,6 @@ index 22c83ac2c..112865220 100755
 +    my $orig_host = $host;
 +    my $intermediate_host = $host;
      my $crossconf = "--build=$build --host=$host";
-+    my $android_min_api = '';
  
      for (\$build, \$host) {
 -        if ($$_ =~ /-(\w+)-\w+$/) {
@@ -47,14 +48,13 @@ index 22c83ac2c..112865220 100755
              }
 +            elsif ($system =~ /^android(\d+)$/) { # special case
 +                $$_ = 'android';
-+                $android_min_api = $1;
 +                $intermediate_host =~ s/$1$//;
 +            }
 +            else { $$_ = $os; }
          }
          else { hardfail("failed to parse triple '$$_'") }
      }
-@@ -773,14 +779,14 @@ sub setup_cross {
+@@ -773,14 +777,14 @@ sub setup_cross {
      $host  = $::SYSTEMS{$host};
  
      my $shell     = $::SHELLS{ $build->[0] };
