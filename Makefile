@@ -77,7 +77,6 @@ DROID_LDFLAGS   = -shared -Wl,-e,start
 DROID_LIBS      = -L$(PREFIX_MOAR)/lib -lmoar -L$(ANDROID_NDK)/platforms/android-$(API_VERSION)/$(SDK_ARCH)/usr/lib -llog
 
 TO_CLEAN        = app $(RAKUDO)* MoarVM*
-TO_BACKUP       = Makefile src README.md
 
 export PATH    := $(ANDROID_NDK_BIN):$(ANDROID_SDK_PLT):${PATH}
 SHELL           = /bin/bash
@@ -180,7 +179,3 @@ install: all
 	tar -czf MyApplication.tgz app
 	@echo
 	@echo Ok, now go to your Android project\'s root directory \(where the directory \'app\' resides\) and do \'tar -xzvf `pwd`/MyApplication.tgz\'
-
-backup:
-	tar -cJvf ../rakudroid.txz $(TO_BACKUP)
-	mv -f ../rakudroid.txz ~/Documents/tech/rakudroid/
