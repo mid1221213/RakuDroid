@@ -1,0 +1,309 @@
+From f8dea807ce6aa70bcca459e345445242e40fbed8 Mon Sep 17 00:00:00 2001
+From: Alexandre Jousset <mid@gtmp.org>
+Date: Sun, 27 Oct 2019 00:13:27 +0200
+Subject: [PATCH] Make MoarVM cross-compile nicely for Android
+
+---
+ Configure.pl      | 28 +++++++++++++---------
+ build/Makefile.in |  3 +++
+ build/probe.pm    | 41 +++++++++++++++++++++----------
+ build/setup.pm    | 61 +++++++++++++++++++++++++++++++++++++++++++----
+ 4 files changed, 105 insertions(+), 28 deletions(-)
+
+diff --git a/Configure.pl b/Configure.pl
+index 22c83ac2c..112865220 100755
+--- a/Configure.pl
++++ b/Configure.pl
+@@ -479,7 +479,7 @@ $config{auxclean} = @auxfiles ? '$(RM) ' . join ' ', @auxfiles : '@:';
+ 
+ print "OK\n\n";
+ 
+-if ($config{crossconf}) {
++if ($config{crossconf} && !$config{try_run}) {
+     build::auto::detect_cross(\%config, \%defaults);
+     build::probe::static_inline_cross(\%config, \%defaults);
+     build::probe::unaligned_access_cross(\%config, \%defaults);
+@@ -751,18 +751,24 @@ sub setup_cross {
+     hardfail("both --build and --host need to be specified")
+         unless defined $build && defined $host;
+ 
+-    my $cc        = "$host-gcc";
+-    my $ar        = "$host-ar";
++    my $orig_host = $host;
++    my $intermediate_host = $host;
+     my $crossconf = "--build=$build --host=$host";
++    my $android_min_api = '';
+ 
+     for (\$build, \$host) {
+-        if ($$_ =~ /-(\w+)-\w+$/) {
+-            $$_ = $1;
+-            if (!exists $::SYSTEMS{$1}) {
+-                softfail("unknown OS '$1'");
++        if (my ($os, $system) = $$_ =~ /-(\w+)-(\w+)$/) {
++            if (!exists $::SYSTEMS{$os}) {
++                softfail("unknown OS '$os'");
+                 print dots("    assuming GNU userland");
+                 $$_ = 'posix';
+             }
++            elsif ($system =~ /^android(\d+)$/) { # special case
++                $$_ = 'android';
++                $android_min_api = $1;
++                $intermediate_host =~ s/$1$//;
++            }
++            else { $$_ = $os; }
+         }
+         else { hardfail("failed to parse triple '$$_'") }
+     }
+@@ -773,14 +779,14 @@ sub setup_cross {
+     $host  = $::SYSTEMS{$host};
+ 
+     my $shell     = $::SHELLS{ $build->[0] };
+-    my $toolchain = $::TOOLCHAINS{gnu};
+-    my $compiler  = $::COMPILERS{gcc};
++    my $toolchain = $::TOOLCHAINS{ $host->[1] };
++    my $compiler  = $::COMPILERS{ $toolchain->{-compiler} };
+     my $overrides = $host->[3];
+ 
+     set_defaults($shell, $toolchain, $compiler, $overrides);
+ 
+-    $defaults{cc}        = $cc;
+-    $defaults{ar}        = $ar;
++    $defaults{cc}        = "$orig_host-" . $::COMPILERS{ $toolchain->{-compiler} }{cc};
++    $defaults{ar}        = "$intermediate_host-ar";
+     $defaults{crossconf} = $crossconf;
+     $defaults{be}        = $args{'big-endian'};
+ }
+diff --git a/build/Makefile.in b/build/Makefile.in
+index 1cab3a5e3..7ff66c8d1 100644
+--- a/build/Makefile.in
++++ b/build/Makefile.in
+@@ -457,6 +457,9 @@ UV_LINUX = 3rdparty/libuv/src/unix/linux-core@obj@ \
+            3rdparty/libuv/src/unix/proctitle@obj@ \
+            $(UV_UNIX)
+ 
++UV_ANDROID = 3rdparty/libuv/src/unix/pthread-fixes@obj@ \
++             $(UV_LINUX)
++
+ UV_OPENBSD = 3rdparty/libuv/src/unix/openbsd@obj@ \
+              3rdparty/libuv/src/unix/kqueue@obj@ \
+              3rdparty/libuv/src/unix/posix-hrtime@obj@ \
+diff --git a/build/probe.pm b/build/probe.pm
+index 28847127b..47219bbc8 100644
+--- a/build/probe.pm
++++ b/build/probe.pm
+@@ -63,6 +63,20 @@ sub compile {
+     return 1;
+ }
+ 
++sub run {
++    my ($config, $exe, $ret_out) = @_;
++
++    if ($config->{try_run}) {
++        system "$config->{try_cp} $exe /data/local/tmp/$exe" if $config->{try_cp};
++        return $ret_out ? '' : $? if $?;
++        return `$config->{try_run} /data/local/tmp/$exe` if $ret_out;
++        return system "$config->{try_run} /data/local/tmp/$exe";
++    } else {
++        return `$exe` if $ret_out;
++        return system $exe;
++    }
++}
++
+ sub _spew {
+     my ($filename, $content) = @_;
+     open my $fh, '>', $filename
+@@ -146,7 +160,7 @@ EOT
+     print ::dots('    probing whether your compiler thinks that it is gcc');
+     compile($config, 'try')
+         or die "Can't compile simple gcc probe, so something is badly wrong";
+-    my $gcc = !system './try';
++    my $gcc = !run($config, './try');
+     print $gcc ? "YES\n": "NO\n";
+ 
+     print ::dots('    probing how your compiler does static inline');
+@@ -200,10 +214,10 @@ EOCP
+     my $s_i;
+     while (my $try = shift @try) {
+         next unless compile($config, 'inline', ["INLINE=$try"], ['a.c']);
+-        next if system "./inline";
++        next if run($config, "./inline");
+         # Now make sure there is no external linkage of static functions
+         if(!compile($config, 'inline', ["INLINE=$try", "USE_B"], ['a.c', 'b.c'])
+-           || system "./inline") {
++           || run($config, "./inline")) {
+             $s_i = "static $try";
+             last;
+         }
+@@ -360,7 +374,8 @@ EOT
+     print ::dots('    probing the size of pointers');
+     compile($config, 'try')
+         or die "Can't compile simple probe, so something is badly wrong";
+-    my $size = `./try`;
++    my $size = run($config, './try', 1);
++    print $size;
+     die "Unable to run probe, so something is badly wrong"
+         unless defined $size;
+     chomp $size;
+@@ -400,8 +415,8 @@ EOT
+ 
+     print ::dots('    probing computed goto support');
+     my $can_cgoto = compile($config, 'try');
+-    unless ($config->{crossconf}) {
+-        $can_cgoto  &&= !system './try';
++    unless ($config->{crossconf} || $config->{try_run}) {
++        $can_cgoto  &&= !run($config, './try');
+     }
+     print $can_cgoto ? "YES\n": "NO\n";
+     $config->{cancgoto} = $can_cgoto || 0
+@@ -423,8 +438,8 @@ EOT
+ 
+     print ::dots('    probing existance of optional malloc_trim()');
+     my $can = compile($config, 'try');
+-    unless ($config->{crossconf}) {
+-        $can  &&= !system './try';
++    unless ($config->{crossconf} || $config->{try_run}) {
++        $can  &&= !run($config, './try');
+     }
+     print $can ? "YES\n": "NO\n";
+     $config->{has_fn_malloc_trim} = $can || 0
+@@ -450,7 +465,7 @@ EOT
+     for my $type (qw(_Bool bool)) {
+         _spew('try.c', sprintf $template, $type);
+         $have{$type}   = compile($config, 'try');
+-        $have{$type} &&= !system './try' unless $config->{crossconf};
++        $have{$type} &&= !run($config, './try') unless $config->{crossconf} || $config->{try_run};
+         delete $have{$type} unless $have{$type}
+     }
+     print %have ? "YES: " . join(',', sort keys %have) . "\n": "NO: none\n";
+@@ -478,7 +493,7 @@ int main(int argc, char **argv) {
+ EOT
+ 
+     print ::dots('    probing pthread_yield support');
+-    my $has_pthread_yield = compile($config, 'try') && system('./try') == 0;
++    my $has_pthread_yield = compile($config, 'try') && run($config, './try') == 0;
+     print $has_pthread_yield ? "YES\n": "NO\n";
+     $config->{has_pthread_yield} = $has_pthread_yield || 0
+ }
+@@ -507,7 +522,7 @@ EOT
+     my $print_result;
+     my $num_bits = 0;
+     if(compile($config, 'numbits')) {
+-        $num_bits = $print_result = system('./numbits') >> 8;
++        $num_bits = $print_result = run($config, './numbits') >> 8;
+     }
+     if (!defined $print_result || $print_result == -1) {
+         $print_result = 'UNKNOWN';
+@@ -560,8 +575,8 @@ EOT
+ 
+     print ::dots('    probing support of rdtscp intrinsic');
+     my $can_rdtscp = compile($config, 'try');
+-    unless ($config->{crossconf}) {
+-        $can_rdtscp  &&= !system './try';
++    unless ($config->{crossconf} || $config->{try_run}) {
++        $can_rdtscp  &&= !run($config, './try');
+     }
+     print $can_rdtscp ? "YES\n": "NO\n";
+     $config->{canrdtscp} = $can_rdtscp || 0
+diff --git a/build/setup.pm b/build/setup.pm
+index d972f56e9..4a23b2bed 100644
+--- a/build/setup.pm
++++ b/build/setup.pm
+@@ -179,6 +179,14 @@ TERM
+     dlllocal  => '__attribute__ ((visibility ("hidden")))',
+ );
+ 
++our %TC_ANDROID = (
++    %TC_GNU,
++
++    -compiler => 'android',
++
++    ldrpath_relocatable      => '-Wl,-rpath,\'$$ORIGIN/../lib\'',
++);
++
+ our %TC_BSD = (
+     %TC_POSIX,
+ 
+@@ -264,10 +272,11 @@ TERM
+ );
+ 
+ our %TOOLCHAINS = (
+-    posix => { %TC_POSIX },
+-    gnu   => { %TC_GNU },
+-    bsd   => { %TC_BSD },
+-    msvc  => { %TC_MSVC },
++    posix   => { %TC_POSIX },
++    gnu     => { %TC_GNU },
++    android => { %TC_ANDROID },
++    bsd     => { %TC_BSD },
++    msvc    => { %TC_MSVC },
+ );
+ 
+ # compiler configuration
+@@ -359,6 +368,39 @@ our %COMPILERS = (
+         expect_condition => '__builtin_expect((condition), (expection))'
+     },
+ 
++    android => {
++        -toolchain => 'android',
++
++        cc => 'clang',
++        ld => undef,
++        as => 'as',
++
++        try_cp => 'adb push >/dev/null 2>&1',
++        try_run => 'adb shell',
++
++        ccmiscflags  =>  '-fno-omit-frame-pointer -fno-optimize-sibling-calls',
++        ccwarnflags  => '-Wno-logical-op-parentheses',
++        ccoptiflags  => '-O%s -DNDEBUG',
++        ccdebugflags => '-g%s',
++        ccinstflags  => '-fsanitize=address',
++        cc_covflags => '-fprofile-instr-generate -fcoverage-mapping',
++        ccjitflags   => '',
++
++        ldmiscflags  => '-lm',
++        ldoptiflags  => undef,
++        lddebugflags => undef,
++        ldinstflags  => undef,
++        ld_covflags => '-fprofile-instr-generate -fcoverage-mapping',
++
++        noreturnspecifier => '',
++        noreturnattribute => '__attribute__((noreturn))',
++        formatattribute   => '__attribute__((format(X, Y, Z)))',
++        vectorizerspecifier => '_Pragma ("clang loop vectorize(enable)")',
++        expect_likely => '__builtin_expect(!!(condition), 1)',
++        expect_unlikely => '__builtin_expect(!!(condition), 0)',
++        expect_condition => '__builtin_expect((condition), (expection))'
++    },
++
+     cl => {
+         -toolchain => 'msvc',
+ 
+@@ -502,6 +544,16 @@ our %OS_LINUX = (
+     },
+ );
+ 
++our %OS_ANDROID = (
++    %OS_LINUX,
++
++    syslibs => [ qw( m dl ) ],
++
++    -thirdparty => {
++        uv => { %TP_UVDUMMY, objects => '$(UV_ANDROID)' },
++    },
++);
++
+ our %OS_OPENBSD = (
+     %OS_POSIX,
+ 
+@@ -590,6 +642,7 @@ our %OS_DARWIN = (
+ our %SYSTEMS = (
+     posix       => [ qw( posix posix cc ),    { %OS_POSIX } ],
+     linux       => [ qw( posix gnu   gcc ),   { %OS_LINUX } ],
++    android     => [ qw( posix android clang ), { %OS_ANDROID } ],
+     aix         => [ qw( posix gnu   gcc ),   { %OS_AIX } ],
+     darwin      => [ qw( posix gnu   clang ), { %OS_DARWIN } ],
+     openbsd     => [ qw( posix bsd   clang ),   { %OS_OPENBSD} ],
+-- 
+2.20.1
+
