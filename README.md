@@ -6,7 +6,7 @@ RakuDroid is a WIP.
 
 RakuDroid's goal is to port Raku (A.K.A. Perl6) on Android platform.
 
-The first work has been to cross compile Rakudo / MoarVM for Android. It uses the last release of both at the time of writing, i.e. 2019.07.1. This has been possible with just a patch to MoarVM. You can look at the patch in the file `src/rakudroid/0001-Make-MoarVM-cross-compile-nicely-for-Android.patch`.
+The first work has been to cross compile Rakudo / MoarVM for Android. It uses the last release of both at the time of writing, i.e. 2019.07.1. This has been possible with just a patch to MoarVM. You can look at the patch in the file `src/librakudroid/0001-Make-MoarVM-cross-compile-nicely-for-Android.patch`.
 
 ## Supported platforms
 
