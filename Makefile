@@ -111,6 +111,9 @@ check:
 			echo device\'s arch matches; \
 		fi; \
 	fi
+	@if [[ ! -d $(ANDROID_SDK)/ndk ]]; then \
+		echo please install the NDK via Android Studio && false; \
+	fi
 	@if [[ -r $(CC) ]]; then \
 		echo cross-compiler found in $(CC); \
 	else \
