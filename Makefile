@@ -49,7 +49,6 @@ P6_OPS_SO_DIR   = $(DROID_PREFIX)/assets/rakudroid/share/perl6/lib/dynext
 P6_OPS_SO       = $(P6_OPS_SO_DIR)/libperl6_ops_moar.so
 P6_OPS_SRCS     = $(RAKUDO)/src/vm/moar/ops/perl6_ops.c $(RAKUDO)/src/vm/moar/ops/container.c
 P6_OPS_CFLAGS   = $(CFLAGS_COM)
-#P6_OPS_LDFLAGS  = -shared -L$(PREFIX_MOAR)/lib -Wl,-rpath-link=$(PREFIX_MOAR)/lib -Wl,-rpath='$$ORIGIN'/../../../../lib
 P6_OPS_LDFLAGS  = -shared -L$(PREFIX_MOAR)/lib -Wl,-rpath-link=$(PREFIX_MOAR)/lib
 P6_OPS_LIBS     = -lmoar -lm -ldl
 
