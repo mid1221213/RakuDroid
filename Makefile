@@ -103,8 +103,10 @@ check:
 		echo \'adb\' not found in PATH && false; \
 	else \
 		echo adb found here: $$adb; \
-		arch=`adb shell uname -m`; \
-		if [[ $$arch != $(ARCH) ]]; then \
+		arch=`adb shell uname -m 2>/dev/null`; \
+		if [[ $$arch == "" ]]; then \
+			echo target device not found, is it connected\? && false; \
+		elif [[ $$arch != $(ARCH) ]]; then \
 			echo target device is $$arch, not $(ARCH) && false; \
 		else \
 			echo device\'s arch matches; \
