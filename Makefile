@@ -179,6 +179,9 @@ install: all
 	cp -a src/AndroidStudio/MainActivity.kt $(DROID_PREFIX)/java/$(PROJ_JAVA_PATH)/
 	mkdir -p $(DROID_PREFIX)/cpp
 	cp -a src/AndroidStudio/CMakeLists.txt src/librakudroid/rakudroid.h src/AndroidStudio/native-lib.cpp $(DROID_PREFIX)/cpp/
+	cp -a rakudo-2019.07.1/install/share/perl6 app/src/main/assets/rakudroid/share/
+	rm -rf app/src/main/assets/rakudroid/share/perl6/runtime/dynext/
+	cp -a rakudo-2019.07.1/install/share/nqp/lib/* app/src/main/assets/rakudroid/share/perl6/lib/
 	tar -czf MyApplication.tgz app
 	@echo
 	@echo Ok, now go to your Android project\'s root directory \(where the directory \'app\' resides\) and do \'tar -xzvf `pwd`/MyApplication.tgz\'
