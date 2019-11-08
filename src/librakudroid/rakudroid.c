@@ -30,7 +30,7 @@ static int64_t *ok;
 
 void rakudo_p6_set_ok(int64_t p6ok)
 {
-    printf("IN rakudo_p6_set_ok(%ld)\n", p6ok);
+//    printf("IN rakudo_p6_set_ok(%ld)\n", p6ok);
     *ok = p6ok;
 }
 
@@ -89,7 +89,7 @@ void rakudo_init(int from_lib, int argc, char *argv[], int64_t *main_ok)
 
     /* Retrieve the executable directory path. */
 
-    printf("from_lib=%d, argc = %d\n", from_lib, argc);
+//    printf("from_lib=%d, argc = %d\n", from_lib, argc);
 
     /* exec_dir_path = strdup(argv[0]); */
     exec_dir_path = strdup(exec_path);
@@ -116,31 +116,23 @@ void rakudo_init(int from_lib, int argc, char *argv[], int64_t *main_ok)
     /* Put together the lib paths and perl6_file path. */
 
     char *home = getenv("HOME");
-//    setenv("RAKUDO_PREFIX", exec_dir_path, 1);
     home_size = strlen(home);
 
-//    lib_path[0] = (char*)malloc(exec_dir_path_size + nqp_home_size       + 50);
     lib_path[0] = (char*)malloc(home_size          + nqp_home_size       + 50);
-//    lib_path[0] = (char*)malloc(exec_dir_path_size + perl6_home_size     + 50);
     lib_path[1] = (char*)malloc(home_size          + perl6_home_size     + 50);
     lib_path[2] = (char*)malloc(home_size          + perl6_home_size     + 50);
     lib_path[3] = (char*)malloc(exec_dir_path_size + perl6_home_size     + 50);
-//    perl6_file  = (char*)malloc(home_size          + perl6_home_size     + 50);
     perl6_file  = (char*)malloc(home_size          + perl6_home_size     + 50);
     helper_path = (char*)malloc(home_size          + helper_file_size    +  1);
 
-//    memcpy(lib_path[0], exec_dir_path, exec_dir_path_size);
     memcpy(lib_path[0], home,          home_size         );
-//    memcpy(lib_path[0], exec_dir_path, exec_dir_path_size);
     memcpy(lib_path[1], home,          home_size         );
     memcpy(lib_path[2], home,          home_size         );
     memcpy(lib_path[3], exec_dir_path, exec_dir_path_size);
     memcpy(perl6_file,  home,          home_size         );
     memcpy(helper_path, home,          home_size         );
 
-//    memcpy(lib_path[0] + exec_dir_path_size - 1, nqp_home,     nqp_home_size);
     memcpy(lib_path[0] + home_size,              nqp_home,     nqp_home_size);
-//    memcpy(lib_path[0] + exec_dir_path_size - 1, perl6_home, perl6_home_size);
     memcpy(lib_path[1] + home_size,              perl6_home, perl6_home_size);
     memcpy(lib_path[2] + home_size,              perl6_home, perl6_home_size);
     memcpy(lib_path[3] + exec_dir_path_size - 1, perl6_home, perl6_home_size);
@@ -151,14 +143,11 @@ void rakudo_init(int from_lib, int argc, char *argv[], int64_t *main_ok)
     setenv("RAKUDO_PREFIX", rakudo_prefix, 1);
     free(rakudo_prefix);
 
-//    strcpy(lib_path[0] + exec_dir_path_size - 1 +   nqp_home_size, "/lib");
     strcpy(lib_path[0] + home_size              +   nqp_home_size, "/lib");
-//    strcpy(lib_path[0] + exec_dir_path_size - 1 + perl6_home_size, "/lib");
     strcpy(lib_path[1] + home_size              + perl6_home_size, "/lib");
     strcpy(lib_path[2] + home_size              + perl6_home_size, "/runtime");
 
     strcpy(lib_path[3] + exec_dir_path_size - 1 + perl6_home_size, "/lib");
-//    strcpy(lib_path[3] + exec_dir_path_size - 1 + perl6_home_size, "");
 
     strcpy(perl6_file  + home_size              + perl6_home_size, "/runtime/perl6.moarvm");
     strcpy(helper_path + home_size,                   helper_file);
@@ -203,7 +192,6 @@ void rakudo_init(int from_lib, int argc, char *argv[], int64_t *main_ok)
             }
         });
 
-    printf("******************* AFTER INIT PM6, hp=%s, h=%s\n", helper_path, home);
     instance->num_clargs = 1;
     instance->raw_clargs = (char **) &helper_path;
     instance->clargs = NULL; /* clear cache */
