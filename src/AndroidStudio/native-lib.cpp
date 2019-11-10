@@ -14,7 +14,7 @@ extern "C" {
 int64_t ok = 0;
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_example_myapplication_MainActivity_rakuInit(
+Java_com_example_myapplication_MyApplication_rakuInit(
         JNIEnv* env,
         jobject /* this */,
         jstring appDir) {

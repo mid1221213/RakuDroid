@@ -180,7 +180,9 @@ install: all
 	mkdir -p app
 	sed -e s/%%ARCH_JNI%%/$(JNI_ARCH)/ src/AndroidStudio/build.gradle.in >app/build.gradle
 	mkdir -p $(DROID_PREFIX)/java/$(PROJ_JAVA_PATH)
-	cp -a src/AndroidStudio/MainActivity.kt $(DROID_PREFIX)/java/$(PROJ_JAVA_PATH)/
+	mkdir -p $(DROID_PREFIX)/res
+	cp -a src/AndroidStudio/AndroidManifest.xml $(DROID_PREFIX)/
+	cp -a src/AndroidStudio/MainActivity.kt src/AndroidStudio/MyApplication.kt src/AndroidStudio/Utils.kt $(DROID_PREFIX)/java/$(PROJ_JAVA_PATH)/
 	mkdir -p $(DROID_PREFIX)/cpp
 	cp -a src/AndroidStudio/CMakeLists.txt src/librakudroid/rakudroid.h src/AndroidStudio/native-lib.cpp $(DROID_PREFIX)/cpp/
 	mkdir -p $(DROID_PREFIX)/res/values
