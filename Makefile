@@ -183,6 +183,10 @@ install: all
 	cp -a src/AndroidStudio/MainActivity.kt $(DROID_PREFIX)/java/$(PROJ_JAVA_PATH)/
 	mkdir -p $(DROID_PREFIX)/cpp
 	cp -a src/AndroidStudio/CMakeLists.txt src/librakudroid/rakudroid.h src/AndroidStudio/native-lib.cpp $(DROID_PREFIX)/cpp/
+	mkdir -p $(DROID_PREFIX)/res/values
+	cp -a src/AndroidStudio/styles.xml $(DROID_PREFIX)/res/values/
+	mkdir -p $(DROID_PREFIX)/res/layout
+	cp -a src/AndroidStudio/activity_main.xml $(DROID_PREFIX)/res/layout/
 	cp -a rakudo-2019.07.1/install/share/perl6 app/src/main/assets/rakudroid/share/
 	rm -rf app/src/main/assets/rakudroid/share/perl6/runtime/dynext/
 	cp -a rakudo-2019.07.1/install/share/nqp/lib/* app/src/main/assets/rakudroid/share/perl6/lib/

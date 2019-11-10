@@ -1,48 +1,64 @@
 package com.example.myapplication
 
-import android.content.Context
-import androidx.appcompat.app.AppCompatActivity
+import android.app.Activity
+import android.content.res.AssetManager
 import android.os.Bundle
 import kotlinx.android.synthetic.main.activity_main.*
-import android.content.res.AssetManager
-import android.util.Log
 import java.io.*
 import java.util.logging.Logger
 
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : Activity() {
+
+    var toPath : String = ""
+
+    external fun rakuInit(dataDir: String): Void
+    external fun rakuEval(toEval: String): String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val toPath = this.filesDir.getAbsolutePath()
+        toPath = filesDir.getAbsolutePath()
 
-        val ok = copyAssetFolder(
-            this.assets,
-            "rakudroid",
-            toPath + "/rakudroid"
-        )
+        rakuInit(toPath)
 
-        if (ok)
-            sample_text.text = stringFromJNI(toPath)
-        else
-            sample_text.text = "** FAILED ** " + toPath
+        eval_button.setOnClickListener {
+            output_text.text = rakuEval(input_text.text.toString())
+        }
+        extract_button.setOnClickListener {
+            extractAssets(true)
+        }
     }
 
-    /**
-     * A native method that is implemented by the 'native-lib' native library,
-     * which is packaged with this application.
-     */
-    external fun stringFromJNI(dataDir: String): String
+    fun extractAssets(force : Boolean) {
+        var ok = !force && File(toPath + "/rakudroid").exists()
+
+        if (!ok)
+            ok = copyAssetFolder(
+                assets,
+                "rakudroid",
+                toPath + "/rakudroid"
+            )
+
+        output_text.text = if (ok) "OK" else "ERROR"
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        extractAssets(false)
+
+        }
+
+
 
     companion object {
-
-        // Used to load the 'native-lib' library on application startup.
         init {
             System.loadLibrary("native-lib")
         }
     }
+
     val my_log = Logger.getLogger(MainActivity::class.java.name)
 
     private fun copyAssetFolder(

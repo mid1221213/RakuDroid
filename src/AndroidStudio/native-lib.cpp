@@ -11,14 +11,15 @@ extern "C" {
 
 //#define printf(...) __android_log_print(ANDROID_LOG_DEBUG, "RAKU", __VA_ARGS__);
 
-extern "C" JNIEXPORT jstring JNICALL
-Java_com_example_myapplication_MainActivity_stringFromJNI(
+int64_t ok = 0;
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_myapplication_MainActivity_rakuInit(
         JNIEnv* env,
         jobject /* this */,
         jstring appDir) {
-    int64_t ok = 0;
 
-    const char *c_dir = env->GetStringUTFChars(appDir, 0);
+    const char *c_dir = env->GetStringUTFChars(appDir, nullptr);
     chdir(c_dir);
     env->ReleaseStringUTFChars(appDir, c_dir);
 
@@ -26,16 +27,23 @@ Java_com_example_myapplication_MainActivity_stringFromJNI(
 
     setenv("HOME", getcwd(buf, sizeof(buf)), 1);
     rakudo_init(0, 0, nullptr, &ok);
+}
 
-    char *eval = rakudo_eval(const_cast<char *>("'5 + 4² = ' ~ 5 + 4²"));
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_example_myapplication_MainActivity_rakuEval(
+        JNIEnv* env,
+        jobject /* this */,
+        jstring toEval) {
 
-    if (ok) {
-        auto ret = env->NewStringUTF(eval);
-        free(eval);
-        return ret;
-    }
+    const char *evalMe = env->GetStringUTFChars(toEval, nullptr);
+
+    char *eval = rakudo_eval(const_cast<char *>(evalMe));
+
+    env->ReleaseStringUTFChars(toEval, evalMe);
+
+    auto ret = env->NewStringUTF(ok ? eval : "NOK");
 
     free(eval);
 
-    return env->NewStringUTF("NOK");
+    return ret;
 }

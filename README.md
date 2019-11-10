@@ -80,7 +80,7 @@ When building the following occurs:
 
 ## Installation and test
 
-As said before, this is a PoC. The goal at the moment is to have an Android application that, when launched, displays **exactly** « 5 + 4² = 9 », where the source of this string, which is eval'ed by Rakudo, is « `'5 + 4² = ' ~ 5 + 4²` » (`src/AndroidStudio/native-lib.cpp` line 30 at the moment of writing).
+As said before, this is a PoC. The goal at the moment is to have an Android application that, when launched, displays a kind or REPL. You enter the expression to eval, then click on "Eval", and the result (return value) is displayed. The button "Extract Assets" is here in case the asset extraction has been interrupted at the beginning (should not happen). Be careful, the evaluation step of REPL is done independantly each time. That means that a "my" variable is lost between evaluations. An "our" variable is kept, but you need to use it with the special package name "RakuDroidRun", e.g. `$KaruDroindRun::my-var` at 2nd and forth times.
 
 Once you have successfully `make install`'ed (that takes almost 5mn on my host), you should end up with a file `MyApplication.tgz`. Launch Android Studio, select « New Project » and use the `Native C++` activity template. Keep the default settings (especially the ID of the application `com.example.myapplication`, or else overwrite the `PROJ_JAVA_PATH` variable), except for Android version to use, it should be **at least** Oreo (8.0).
 
