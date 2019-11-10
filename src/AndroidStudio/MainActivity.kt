@@ -6,15 +6,13 @@ import com.example.myapplication.utils.extractAssets
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : Activity() {
-    private var toPath : String = ""
-
     private external fun rakuEval(toEval: String): String
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        toPath = filesDir.absolutePath
+        val toPath = filesDir.absolutePath
 
         eval_button.setOnClickListener {
             output_text.text = rakuEval(input_text.text.toString())
