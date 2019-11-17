@@ -45,7 +45,7 @@ CFLAGS_COM     += -I$(PREFIX_MOAR)/include/libatomic_ops
 CFLAGS_COM     += -I$(PREFIX_MOAR)/include/dyncall
 CFLAGS_COM     += -I$(PREFIX_MOAR)/include/libtommath
 
-P6_OPS_SO_DIR   = $(DROID_PREFIX)/assets/rakudroid/share/perl6/lib/dynext
+P6_OPS_SO_DIR   = rakudo-$(RELEASE)/install/share/perl6/runtime/dynext
 P6_OPS_SO       = $(P6_OPS_SO_DIR)/libperl6_ops_moar.so
 P6_OPS_SRCS     = $(RAKUDO)/src/vm/moar/ops/perl6_ops.c $(RAKUDO)/src/vm/moar/ops/container.c
 P6_OPS_CFLAGS   = $(CFLAGS_COM)
@@ -63,11 +63,13 @@ DROID_SO_NAME   = librakudroid.so
 DROID_SO        = $(DROID_SO_DIR)/$(DROID_SO_NAME)
 MOAR_SO         = $(DROID_SO_DIR)/libmoar.so
 
-HELPER_DIR      = $(DROID_PREFIX)/assets/rakudroid/lib
+#P6_LIBDIR       = $(DROID_PREFIX)/assets/rakudroid/share/perl6/vendor
+P6_LIBDIR       = $(DROID_PREFIX)/assets/rakudroid/lib
 
 DROID_DEFINES   = -DSTATIC_NQP_HOME="/rakudroid/share/nqp"
 DROID_DEFINES  += -DSTATIC_PERL6_HOME="/rakudroid/share/perl6"
-DROID_DEFINES  += -DSTATIC_HELPER_FILE="/rakudroid/lib/RakuDroid.pm6"
+DROID_DEFINES  += -DSTATIC_PERL6_LIB="/rakudroid/lib"
+DROID_DEFINES  += -DSTATIC_HELPER_FILE="/rakudroid/lib/RakuDroidInit.pm6"
 DROID_DEFINES  += -DLIBFILENAME="$(DROID_SO_NAME)"
 
 DROID_CFLAGS    = $(CFLAGS_COM)
@@ -75,7 +77,7 @@ DROID_LDFLAGS   = -shared -Wl,-e,start
 
 DROID_LIBS      = -L$(PREFIX_MOAR)/lib -lmoar -L$(ANDROID_NDK)/platforms/android-$(API_VERSION)/$(SDK_ARCH)/usr/lib -llog
 
-TO_CLEAN        = app $(RAKUDO)* MoarVM* MyApplication.tgz
+TO_CLEAN        = $(RAKUDO)* MoarVM* MyApplication.tgz
 
 export PATH    := $(ANDROID_NDK_BIN):$(ANDROID_SDK_PLT):${PATH}
 SHELL           = /bin/bash
@@ -127,7 +129,7 @@ check:
 	fi
 
 
-all: $(DROID_SO) $(MOAR_SO) $(P6_OPS_SO) $(HELPER_DIR)/RakuDroid.pm6
+all: $(DROID_SO) $(MOAR_SO) $(P6_OPS_SO) $(P6_LIBDIR)/RakuDroidInit.pm6 $(P6_LIBDIR)/RakuDroid.pm6 gen.touch
 
 $(MOAR_TARGET).touch:
 	rm -rf $(MOAR_TARGET)
@@ -156,9 +158,13 @@ $(RAKUDO).tar.gz:
 $(RAKUDO): $(RAKUDO).tar.gz
 	tar -xzf $(RAKUDO).tar.gz
 
-$(HELPER_DIR)/RakuDroid.pm6:
-	mkdir -p $(HELPER_DIR)
-	cp -a src/librakudroid/RakuDroid.pm6 $(HELPER_DIR)/
+$(P6_LIBDIR)/RakuDroidInit.pm6: src/librakudroid/RakuDroidInit.pm6
+	mkdir -p $(P6_LIBDIR)
+	cp -a src/librakudroid/RakuDroidInit.pm6 $(P6_LIBDIR)/
+
+$(P6_LIBDIR)/RakuDroid.pm6: src/librakudroid/RakuDroid.pm6
+	mkdir -p $(P6_LIBDIR)
+	cp -a src/librakudroid/RakuDroid.pm6 $(P6_LIBDIR)/
 
 $(DROID_SO): $(DROID_SRCS) $(DROID_HDRS) $(RAKUDO).touch $(MOAR_TARGET).touch
 	mkdir -p $(DROID_SO_DIR)
@@ -170,8 +176,22 @@ $(P6_OPS_SO): $(P6_OPS_SRCS) $(RAKUDO).touch
 	mkdir -p $(P6_OPS_SO_DIR)
 	$(CC) $(P6_OPS_CFLAGS) $(P6_OPS_LDFLAGS) -o $(P6_OPS_SO) $(P6_OPS_SRCS) $(P6_OPS_LIBS)
 
+gen.touch: android.sigs
+	rm -rf gen
+	tools/parse-api.pl android.sigs
+	mkdir -p $(P6_LIBDIR)
+	cp -a gen/RakuDroid gen/RakuDroidRole $(P6_LIBDIR)/
+	touch gen.touch
+
+android.sigs:
+	rm -rf android
+	mkdir -p android
+	cd android && unzip $(ANDROID_SDK)/platforms/android-$(API_VERSION)/android.jar >/dev/null
+	rm -f android.sigs
+	find android/ -name '*.class' | xargs javap -s >>android.sigs
+
 clean:
-	rm -rf app
+	rm -rf app gen gen.touch android android.sigs
 
 clean-all: clean
 	rm -rf $(TO_CLEAN)
@@ -189,9 +209,9 @@ install: all
 	cp -a src/AndroidStudio/styles.xml $(DROID_PREFIX)/res/values/
 	mkdir -p $(DROID_PREFIX)/res/layout
 	cp -a src/AndroidStudio/activity_main.xml $(DROID_PREFIX)/res/layout/
-	cp -a rakudo-2019.07.1/install/share/perl6 app/src/main/assets/rakudroid/share/
-	rm -rf app/src/main/assets/rakudroid/share/perl6/runtime/dynext/
-	cp -a rakudo-2019.07.1/install/share/nqp/lib/* app/src/main/assets/rakudroid/share/perl6/lib/
+	mkdir -p app/src/main/assets/rakudroid/share
+	cp -a rakudo-$(RELEASE)/install/share/perl6 app/src/main/assets/rakudroid/share/
+	cp -a rakudo-$(RELEASE)/install/share/nqp app/src/main/assets/rakudroid/share/
 	tar -czf MyApplication.tgz app
 	@echo
 	@echo Ok, now go to your Android project\'s root directory \(where the directory \'app\' resides\) and do \'tar -xzvf `pwd`/MyApplication.tgz\'

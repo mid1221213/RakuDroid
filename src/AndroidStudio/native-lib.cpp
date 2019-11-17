@@ -9,15 +9,19 @@ extern "C" {
 #include <cstdlib>
 #include <unistd.h>
 
-//#define printf(...) __android_log_print(ANDROID_LOG_DEBUG, "RAKU", __VA_ARGS__);
+#define printf(...) __android_log_print(ANDROID_LOG_DEBUG, "RAKU", __VA_ARGS__);
 
 int64_t ok = 0;
 
+JNIEnv *env;
+
 extern "C" JNIEXPORT void JNICALL
 Java_com_example_myapplication_MyApplication_rakuInit(
-        JNIEnv* env,
+        JNIEnv* envParam,
         jobject /* this */,
         jstring appDir) {
+
+    env = envParam;
 
     const char *c_dir = env->GetStringUTFChars(appDir, nullptr);
     chdir(c_dir);
@@ -31,7 +35,7 @@ Java_com_example_myapplication_MyApplication_rakuInit(
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_example_myapplication_MainActivity_rakuEval(
-        JNIEnv* env,
+        JNIEnv* /* env */,
         jobject /* this */,
         jstring toEval) {
 
@@ -41,7 +45,8 @@ Java_com_example_myapplication_MainActivity_rakuEval(
 
     env->ReleaseStringUTFChars(toEval, evalMe);
 
-    auto ret = env->NewStringUTF(ok ? eval : "NOK");
+//    auto ret = env->NewStringUTF(ok ? eval : "NOK");
+    auto ret = env->NewStringUTF(eval);
 
     free(eval);
 

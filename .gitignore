@@ -2,3 +2,7 @@ app
 *.tgz
 MoarVM-*
 rakudo-*
+android
+android.sigs
+gen
+gen.touch

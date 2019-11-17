@@ -1,30 +1,24 @@
-unit module RakuDroid;
+unit class RakuDroid;
 
-use NativeCall;
-use MONKEY-SEE-NO-EVAL;
+# has CPointer $!JObject;
+my %classes;
+has Str $.class-name;
 
-sub rakudo_p6_init(& (Str --> Str)) is native('rakudroid') { * }
-sub rakudo_p6_set_ok(int64) is native('rakudroid') { * }
+method new-obj(Str $class)
+{
+    return $class; # TBD
+}
 
-rakudo_p6_init(sub (Str $code --> Str(Any)) {
-		      module RakuDroidRun {
-			  my $ret = EVAL $code;
+method TWEAK()
+{
+    say "TWEAKing class $!class-name";
+    unless %classes{$!class-name}:exists {
+	%classes{$!class-name} = self.new-obj($!class-name);
+	say "created obj of class $!class-name";
+    }
+}
 
-			  CATCH {
-			      default {
-				  rakudo_p6_set_ok(0);
-				  return .message;
-			      }
-			  }
-
-			  CONTROL {
-			      when CX::Warn {
-				  .message.note;
-				  .resume;
-			      }
-			  }
-
-			  rakudo_p6_set_ok(1);
-			  return $ret;
-		      }
-		  });
+method field-get($name, $type)
+{
+#    return field_get($name, $type);
+}

@@ -36,11 +36,23 @@ void rakudo_p6_set_ok(int64_t p6ok)
 
 static char        *lib_path[4];
 static char        *perl6_file;
-static char        *helper_path;
+static char        *perl6_lib_path;
+static char        *helper_file;
 static char        *exec_dir_path;
 static char        *exec_path = NULL;
 static char        *home;
 static MVMInstance *instance;
+static MVMCompUnit *cu;
+
+/* Points to the current opcode. */
+static MVMuint8 *cur_op = NULL;
+
+/* The current frame's bytecode start. */
+static MVMuint8 *bytecode_start = NULL;
+
+/* Points to the base of the current register set for the frame we
+ * are presently in. */
+static MVMRegister *reg_base = NULL;
 
 /* This callback is passed to the interpreter code. It takes care of making
  * the initial invocation. */
@@ -65,7 +77,6 @@ static int callback(struct dl_phdr_info *info, size_t size, void *data)
 void rakudo_init(int from_lib, int argc, char *argv[], int64_t *main_ok)
 {
     MVMThreadContext *tc;
-    MVMCompUnit *cu;
 
     size_t  exec_dir_path_size;
     char   *slash_pos;
@@ -77,8 +88,11 @@ void rakudo_init(int from_lib, int argc, char *argv[], int64_t *main_ok)
     char   *perl6_home;
     size_t  perl6_home_size;
 
-    char   *helper_file;
-    size_t  helper_file_size;
+    char   *perl6_lib;
+    size_t  perl6_lib_size;
+
+    char   *helper_path;
+    size_t  helper_path_size;
 
     dl_iterate_phdr(callback, NULL);
 
@@ -89,7 +103,7 @@ void rakudo_init(int from_lib, int argc, char *argv[], int64_t *main_ok)
 
     /* Retrieve the executable directory path. */
 
-//    printf("from_lib=%d, argc = %d\n", from_lib, argc);
+//    printf("from_lib=%d, lpath=%s, argc = %d\n", from_lib, exec_path, argc);
 
     /* exec_dir_path = strdup(argv[0]); */
     exec_dir_path = strdup(exec_path);
@@ -110,47 +124,65 @@ void rakudo_init(int from_lib, int argc, char *argv[], int64_t *main_ok)
     perl6_home = STRINGIFY(STATIC_PERL6_HOME);
     perl6_home_size = strlen(perl6_home);
 
-    helper_file = STRINGIFY(STATIC_HELPER_FILE);
-    helper_file_size = strlen(helper_file);
+    perl6_lib = STRINGIFY(STATIC_PERL6_LIB);
+    perl6_lib_size = strlen(perl6_lib);
+
+    helper_path = STRINGIFY(STATIC_HELPER_FILE);
+    helper_path_size = strlen(helper_path);
 
     /* Put together the lib paths and perl6_file path. */
 
     char *home = getenv("HOME");
     home_size = strlen(home);
 
-    lib_path[0] = (char*)malloc(home_size          + nqp_home_size       + 50);
-    lib_path[1] = (char*)malloc(home_size          + perl6_home_size     + 50);
-    lib_path[2] = (char*)malloc(home_size          + perl6_home_size     + 50);
-    lib_path[3] = (char*)malloc(exec_dir_path_size + perl6_home_size     + 50);
-    perl6_file  = (char*)malloc(home_size          + perl6_home_size     + 50);
-    helper_path = (char*)malloc(home_size          + helper_file_size    +  1);
+    char *ldlibpath = (char*)malloc(exec_dir_path_size + 1 + home_size + perl6_home_size + 50);
+    strcpy(ldlibpath, exec_dir_path);
+    strcat(ldlibpath, ":");
+    strcat(ldlibpath, home);
+    strcat(ldlibpath, perl6_home);
+    strcat(ldlibpath, "/runtime");
 
-    memcpy(lib_path[0], home,          home_size         );
-    memcpy(lib_path[1], home,          home_size         );
-    memcpy(lib_path[2], home,          home_size         );
-    memcpy(lib_path[3], exec_dir_path, exec_dir_path_size);
-    memcpy(perl6_file,  home,          home_size         );
-    memcpy(helper_path, home,          home_size         );
+    setenv("LD_LIBRARY_PATH", ldlibpath, 1);
 
-    memcpy(lib_path[0] + home_size,              nqp_home,     nqp_home_size);
-    memcpy(lib_path[1] + home_size,              perl6_home, perl6_home_size);
-    memcpy(lib_path[2] + home_size,              perl6_home, perl6_home_size);
-    memcpy(lib_path[3] + exec_dir_path_size - 1, perl6_home, perl6_home_size);
-    memcpy(perl6_file  + home_size,              perl6_home, perl6_home_size);
+    free(ldlibpath);
+    free(exec_dir_path);
+
+    lib_path[0]    = (char*)malloc(home_size + nqp_home_size    + 50);
+    lib_path[1]    = (char*)malloc(home_size + perl6_home_size  + 50);
+    lib_path[2]    = (char*)malloc(home_size + perl6_home_size  + 50);
+    perl6_file     = (char*)malloc(home_size + perl6_home_size  + 50);
+    perl6_lib_path = (char*)malloc(home_size + perl6_lib_size   +  1);
+    helper_file    = (char*)malloc(home_size + helper_path_size +  1);
+
+    memcpy(lib_path[0],    home, home_size);
+    memcpy(lib_path[1],    home, home_size);
+    memcpy(lib_path[2],    home, home_size);
+    memcpy(perl6_file,     home, home_size);
+    memcpy(perl6_lib_path, home, home_size);
+    memcpy(helper_file,    home, home_size);
+
+    memcpy(lib_path[0]    + home_size, nqp_home,   nqp_home_size);
+    memcpy(lib_path[1]    + home_size, perl6_home, perl6_home_size);
+    memcpy(lib_path[2]    + home_size, perl6_home, perl6_home_size);
+    memcpy(perl6_file     + home_size, perl6_home, perl6_home_size);
+    memcpy(perl6_lib_path + home_size, perl6_lib,  perl6_lib_size);
 
     lib_path[1][home_size + perl6_home_size] = 0;
     char *rakudo_prefix = strdup(lib_path[1]);
     setenv("RAKUDO_PREFIX", rakudo_prefix, 1);
     free(rakudo_prefix);
 
-    strcpy(lib_path[0] + home_size              +   nqp_home_size, "/lib");
-    strcpy(lib_path[1] + home_size              + perl6_home_size, "/lib");
-    strcpy(lib_path[2] + home_size              + perl6_home_size, "/runtime");
+    perl6_lib_path[home_size + perl6_lib_size] = 0;
+    setenv("PERL6LIB", perl6_lib_path, 1);
+    free(perl6_lib_path);
 
-    strcpy(lib_path[3] + exec_dir_path_size - 1 + perl6_home_size, "/lib");
+    strcpy(lib_path[0] + home_size +   nqp_home_size, "/lib");
+    strcpy(lib_path[1] + home_size + perl6_home_size, "/lib");
+    strcpy(lib_path[2] + home_size + perl6_home_size, "/runtime");
+    strcpy(perl6_file  + home_size + perl6_home_size, "/runtime/perl6.moarvm");
+    strcpy(helper_file + home_size                  , helper_path);
 
-    strcpy(perl6_file  + home_size              + perl6_home_size, "/runtime/perl6.moarvm");
-    strcpy(helper_path + home_size,                   helper_file);
+    lib_path[3] = NULL;
 
     /* Start up the VM. */
 
@@ -159,9 +191,9 @@ void rakudo_init(int from_lib, int argc, char *argv[], int64_t *main_ok)
     MVM_vm_set_prog_name(instance, perl6_file);
     MVM_vm_set_exec_name(instance, exec_path);
     MVM_vm_set_lib_path(instance, 4, (const char **)lib_path);
-    signal(SIGPIPE, SIG_IGN);
+//    signal(SIGPIPE, SIG_IGN);
 
-    if (argc > 1) {
+    if (argc) {
         MVM_vm_set_clargs(instance, argc - 1, argv + 1);
         MVM_vm_run_file(instance, perl6_file);
         exit(EXIT_SUCCESS);
@@ -193,7 +225,7 @@ void rakudo_init(int from_lib, int argc, char *argv[], int64_t *main_ok)
         });
 
     instance->num_clargs = 1;
-    instance->raw_clargs = (char **) &helper_path;
+    instance->raw_clargs = (char **) &helper_file;
     instance->clargs = NULL; /* clear cache */
 
     MVM_interp_run(tc, toplevel_initial_invoke, cu->body.main_frame);
@@ -218,7 +250,7 @@ void rakudo_init(int from_lib, int argc, char *argv[], int64_t *main_ok)
 
     toplevel_initial_invoke(tc, cu->body.main_frame);
 
-    MVM_gc_mark_thread_blocked(tc);
+//    MVM_gc_mark_thread_blocked(tc);
 }
 
 void rakudo_fini()
@@ -226,12 +258,9 @@ void rakudo_fini()
     free(lib_path[0]);
     free(lib_path[1]);
     free(lib_path[2]);
-    /* free(lib_path[3]); */
-    /* free(lib_path[4]); */
-    free(helper_path);
+    free(helper_file);
     free(perl6_file);
     free(home);
-    free(exec_dir_path);
     free(exec_path);
 
     /* MVM_vm_destroy_instance(instance); */
@@ -239,7 +268,19 @@ void rakudo_fini()
 
 char *rakudo_eval(char *perl6)
 {
-    return strdup(eval_p6(perl6));
+//    MVM_gc_mark_thread_unblocked(instance->main_thread);
+
+    char *ret = strdup(eval_p6(perl6));
+
+//    MVM_gc_mark_thread_blocked(instance->main_thread);
+
+    return ret;
+}
+
+void *method_invoke(char *name, char *sig, void *args[], int argNb)
+{
+    printf("method_invoke(%s, %s, %p, %d\n", name, sig, args, argNb);
+    return NULL;
 }
 
 #define PRINT_EVAL(str) { char *ret = rakudo_eval(str); printf("« " str " » = %s%s\n", ok ? "" : "[NOK] → ", ret); free(ret); }
