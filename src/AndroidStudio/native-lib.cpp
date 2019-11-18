@@ -25,11 +25,9 @@ Java_com_example_myapplication_MyApplication_rakuInit(
 
     const char *c_dir = env->GetStringUTFChars(appDir, nullptr);
     chdir(c_dir);
+    setenv("HOME", c_dir, 1);
     env->ReleaseStringUTFChars(appDir, c_dir);
 
-    char buf[256];
-
-    setenv("HOME", getcwd(buf, sizeof(buf)), 1);
     rakudo_init(0, 0, nullptr, &ok);
 }
 

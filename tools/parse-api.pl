@@ -208,19 +208,20 @@ role $role {}";
     say OUT "# GENERATED, don't edit or you'll loose!
 
 use $role;
-unit $classes{$class}{type} $n_class does $role;
-
-use RakuDroid;
-use NativeCall :types;
 ";
 
     foreach my $used (sort grep { $_ ne $n_class } @{$classes{$class}{uses}}) {
 	my $usedjni = objp62cljni($used);
 #	say OUT "try require $used;" if exists($classes{$usedjni}) && $classes{$usedjni}{type} ne 'role';
-	say OUT "use $used;" if exists($classes{$usedjni});
+	say OUT "use $used;" if exists($classes{$usedjni}) && $used ne $role;
     }
 
     say OUT "
+unit $classes{$class}{type} $n_class does $role;
+
+use RakuDroid;
+use NativeCall :types;
+
 my RakuDroid \$rd = RakuDroid.new(:class-name('$class'));
 
 ";

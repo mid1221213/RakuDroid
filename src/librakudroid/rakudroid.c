@@ -94,11 +94,15 @@ void rakudo_init(int from_lib, int argc, char *argv[], int64_t *main_ok)
     char   *helper_path;
     size_t  helper_path_size;
 
-    dl_iterate_phdr(callback, NULL);
+    if (from_lib) {
+        exec_path = strdup(argv[0]);
+    } else {
+        dl_iterate_phdr(callback, NULL);
 
-    if (!exec_path) {
-        puts("cannot find exec_path");
-        exit(EXIT_FAILURE);
+        if (!exec_path) {
+            puts("cannot find exec_path");
+            exit(EXIT_FAILURE);
+        }
     }
 
     /* Retrieve the executable directory path. */
@@ -193,11 +197,15 @@ void rakudo_init(int from_lib, int argc, char *argv[], int64_t *main_ok)
     MVM_vm_set_lib_path(instance, 4, (const char **)lib_path);
 //    signal(SIGPIPE, SIG_IGN);
 
-    if (argc) {
+    if (from_lib) {
+        /* setenv("RAKUDO_MODULE_DEBUG", "1", 1); */
         MVM_vm_set_clargs(instance, argc - 1, argv + 1);
         MVM_vm_run_file(instance, perl6_file);
         exit(EXIT_SUCCESS);
     }
+
+    /* close(2); */
+    /* open("/data/data/com.example.myapplication/files/stderr", O_APPEND | O_CREAT | O_WRONLY); */
 
     ok = main_ok;
     MVM_vm_set_clargs(instance, 0, NULL);
@@ -250,7 +258,7 @@ void rakudo_init(int from_lib, int argc, char *argv[], int64_t *main_ok)
 
     toplevel_initial_invoke(tc, cu->body.main_frame);
 
-//    MVM_gc_mark_thread_blocked(tc);
+    MVM_gc_mark_thread_blocked(tc);
 }
 
 void rakudo_fini()
@@ -268,11 +276,11 @@ void rakudo_fini()
 
 char *rakudo_eval(char *perl6)
 {
-//    MVM_gc_mark_thread_unblocked(instance->main_thread);
+    MVM_gc_mark_thread_unblocked(instance->main_thread);
 
     char *ret = strdup(eval_p6(perl6));
 
-//    MVM_gc_mark_thread_blocked(instance->main_thread);
+    MVM_gc_mark_thread_blocked(instance->main_thread);
 
     return ret;
 }

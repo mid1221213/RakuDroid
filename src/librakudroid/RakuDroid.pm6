@@ -22,3 +22,8 @@ method field-get($name, $type)
 {
 #    return field_get($name, $type);
 }
+
+method method-invoke($obj, *@args)
+{
+    return RakuDroidInit::method-invoke(@args);
+}
