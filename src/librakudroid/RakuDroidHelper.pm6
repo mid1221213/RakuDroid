@@ -27,7 +27,7 @@ rakudo_p6_init(sub (Str $code --> Str(Any)) {
 
 		      rakudo_p6_set_ok(1);
 		      return $ret unless $ret === Any;
-		      return '<Nil>';
+		      return '<' ~ $ret.perl ~ '>';
 		  });
 
 our sub method-invoke($name, $sig, @args)
