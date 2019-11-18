@@ -69,7 +69,7 @@ P6_LIBDIR       = $(DROID_PREFIX)/assets/rakudroid/lib
 DROID_DEFINES   = -DSTATIC_NQP_HOME="/rakudroid/share/nqp"
 DROID_DEFINES  += -DSTATIC_PERL6_HOME="/rakudroid/share/perl6"
 DROID_DEFINES  += -DSTATIC_PERL6_LIB="/rakudroid/lib"
-DROID_DEFINES  += -DSTATIC_HELPER_FILE="/rakudroid/lib/RakuDroidInit.pm6"
+DROID_DEFINES  += -DSTATIC_HELPER_FILE="/rakudroid/lib/RakuDroidHelper.pm6"
 DROID_DEFINES  += -DLIBFILENAME="$(DROID_SO_NAME)"
 
 DROID_CFLAGS    = $(CFLAGS_COM)
@@ -129,7 +129,7 @@ check:
 	fi
 
 
-all: $(DROID_SO) $(MOAR_SO) $(P6_OPS_SO) $(P6_LIBDIR)/RakuDroidInit.pm6 $(P6_LIBDIR)/RakuDroid.pm6 gen.touch
+all: $(DROID_SO) $(MOAR_SO) $(P6_OPS_SO) $(P6_LIBDIR)/RakuDroidHelper.pm6 $(P6_LIBDIR)/RakuDroid.pm6 gen.touch
 
 $(MOAR_TARGET).touch:
 	rm -rf $(MOAR_TARGET)
@@ -158,9 +158,9 @@ $(RAKUDO).tar.gz:
 $(RAKUDO): $(RAKUDO).tar.gz
 	tar -xzf $(RAKUDO).tar.gz
 
-$(P6_LIBDIR)/RakuDroidInit.pm6: src/librakudroid/RakuDroidInit.pm6
+$(P6_LIBDIR)/RakuDroidHelper.pm6: src/librakudroid/RakuDroidHelper.pm6
 	mkdir -p $(P6_LIBDIR)
-	cp -a src/librakudroid/RakuDroidInit.pm6 $(P6_LIBDIR)/
+	cp -a src/librakudroid/RakuDroidHelper.pm6 $(P6_LIBDIR)/
 
 $(P6_LIBDIR)/RakuDroid.pm6: src/librakudroid/RakuDroid.pm6
 	mkdir -p $(P6_LIBDIR)
