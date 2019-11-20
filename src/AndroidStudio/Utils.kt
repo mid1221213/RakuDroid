@@ -30,8 +30,8 @@ private fun copyAssetFolder(
     val files = assetManager.list(fromAssetPath)
     var res = true
     for (file in files!!) {
-        my_log.warning("file from=$fromAssetPath/$file")
-        my_log.warning("file to=$toPath/$file")
+//        my_log.warning("file from=$fromAssetPath/$file")
+//        my_log.warning("file to=$toPath/$file")
         File(toPath).mkdirs()
         val `in`: InputStream
         var isDir : Boolean = false

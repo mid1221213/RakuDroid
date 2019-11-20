@@ -20,7 +20,7 @@ rakudo_p6_init(sub (Str $code --> Str(Any)) {
 
 		      CONTROL {
 			  when CX::Warn {
-			      .message.note;
+			      .gist.note;
 			      .resume;
 			  }
 		      }
