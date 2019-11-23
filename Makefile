@@ -23,7 +23,7 @@ $(error ARCH=$(ARCH) unknown, must be one of: $(ARCHS))
 endif
 
 RAKUDO          = rakudo-$(RELEASE)
-MOAR_BRANCH     = release-$(RELEASE)
+MOAR_BRANCH     = $(RELEASE)
 RAKUDO_DL       = https://github.com/rakudo/rakudo/releases/download/$(RELEASE)/$(RAKUDO).tar.gz
 
 BUILD_ARCH      = x86_64-pc-linux-gnu

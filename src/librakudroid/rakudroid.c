@@ -2,6 +2,7 @@
 
 #include <libgen.h>
 #include <dlfcn.h>
+#include <unistd.h>
 #include <link.h>
 
 #include <android/log.h>
@@ -74,7 +75,7 @@ static int callback(struct dl_phdr_info *info, size_t size, void *data)
     return 0;
 }
 
-void rakudo_init(int from_lib, int argc, char *argv[], int64_t *main_ok)
+void rakudo_init(int from_main, int argc, char *argv[], int64_t *main_ok)
 {
     MVMThreadContext *tc;
 
@@ -94,7 +95,9 @@ void rakudo_init(int from_lib, int argc, char *argv[], int64_t *main_ok)
     char   *helper_path;
     size_t  helper_path_size;
 
-    if (from_lib) {
+    /* Retrieve the executable directory path. */
+
+    if (from_main) {
         exec_path = strdup(argv[0]);
     } else {
         dl_iterate_phdr(callback, NULL);
@@ -105,11 +108,8 @@ void rakudo_init(int from_lib, int argc, char *argv[], int64_t *main_ok)
         }
     }
 
-    /* Retrieve the executable directory path. */
+//    printf("from_main=%d, lpath=%s, argc = %d\n", from_main, exec_path, argc);
 
-//    printf("from_lib=%d, lpath=%s, argc = %d\n", from_lib, exec_path, argc);
-
-    /* exec_dir_path = strdup(argv[0]); */
     exec_dir_path = strdup(exec_path);
 
     slash_pos = strrchr(exec_dir_path, '/');
@@ -169,14 +169,14 @@ void rakudo_init(int from_lib, int argc, char *argv[], int64_t *main_ok)
     memcpy(lib_path[1]    + home_size, perl6_home, perl6_home_size);
     memcpy(lib_path[2]    + home_size, perl6_home, perl6_home_size);
     memcpy(perl6_file     + home_size, perl6_home, perl6_home_size);
-    memcpy(perl6_lib_path + home_size, perl6_lib,  perl6_lib_size);
 
-    lib_path[1][home_size + perl6_home_size] = 0;
-    char *rakudo_prefix = strdup(lib_path[1]);
-    setenv("RAKUDO_PREFIX", rakudo_prefix, 1);
-    free(rakudo_prefix);
+    strcpy(perl6_lib_path + home_size, "/rakudroid/bin");
+    mkdir(perl6_lib_path, 0700);
+    strcpy(perl6_lib_path + home_size + 14, "/rakudroid");
+    symlink(exec_path, perl6_lib_path);
+    exec_path = strdup(perl6_lib_path);
 
-    perl6_lib_path[home_size + perl6_lib_size] = 0;
+    strcpy(perl6_lib_path + home_size, perl6_lib);
     setenv("PERL6LIB", perl6_lib_path, 1);
     free(perl6_lib_path);
 
@@ -195,10 +195,8 @@ void rakudo_init(int from_lib, int argc, char *argv[], int64_t *main_ok)
     MVM_vm_set_prog_name(instance, perl6_file);
     MVM_vm_set_exec_name(instance, exec_path);
     MVM_vm_set_lib_path(instance, 4, (const char **)lib_path);
-//    signal(SIGPIPE, SIG_IGN);
 
-    if (from_lib) {
-        /* setenv("RAKUDO_MODULE_DEBUG", "1", 1); */
+    if (from_main) {
         MVM_vm_set_clargs(instance, argc - 1, argv + 1);
         MVM_vm_run_file(instance, perl6_file);
         exit(EXIT_SUCCESS);
@@ -206,13 +204,11 @@ void rakudo_init(int from_lib, int argc, char *argv[], int64_t *main_ok)
 
     /* close(2); */
     /* open("/data/data/com.example.myapplication/files/stderr", O_APPEND | O_CREAT | O_WRONLY); */
+//    setenv("RAKUDO_MAX_THREADS", "2", 1);
+    /* setenv("RAKUDO_MODULE_DEBUG", "1", 1); */
 
     ok = main_ok;
     MVM_vm_set_clargs(instance, 0, NULL);
-    // remove later?
-    /* Ignore SIGPIPE by default, since we error-check reads/writes. This does
-     * not prevent users from setting up their own signal handler for SIGPIPE,
-     * which will take precedence over this ignore. */
     tc = instance->main_thread;
     cu = MVM_cu_map_from_file(tc, perl6_file);
     MVMROOT(tc, cu, {
@@ -237,16 +233,6 @@ void rakudo_init(int from_lib, int argc, char *argv[], int64_t *main_ok)
     instance->clargs = NULL; /* clear cache */
 
     MVM_interp_run(tc, toplevel_initial_invoke, cu->body.main_frame);
-
-    /* Points to the current opcode. */
-    MVMuint8 *cur_op = NULL;
-
-    /* The current frame's bytecode start. */
-    MVMuint8 *bytecode_start = NULL;
-
-    /* Points to the base of the current register set for the frame we
-     * are presently in. */
-    MVMRegister *reg_base = NULL;
 
     /* Stash addresses of current op, register base and SC deref base
      * in the TC; this will be used by anything that needs to switch
@@ -305,7 +291,7 @@ void start(void)
     PRINT_EVAL("our sub add ($a, $b) { $a + $b }; add(1, 2)");
     PRINT_EVAL("add(3, 4)");
     PRINT_EVAL("'============================================='");
-    PRINT_EVAL("RakuDroidRun::add(3, 4)");
+    PRINT_EVAL("RakuDroid::add(3, 4)");
 
     rakudo_fini();
 

@@ -11,10 +11,10 @@ method new-obj(Str $class)
 
 method TWEAK()
 {
-    say "TWEAKing class $!class-name";
+    note "TWEAKing class $!class-name";
     unless %classes{$!class-name}:exists {
 	%classes{$!class-name} = self.new-obj($!class-name);
-	say "created obj of class $!class-name";
+	note "created obj of class $!class-name";
     }
 }
 
