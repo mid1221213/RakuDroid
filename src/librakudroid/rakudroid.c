@@ -35,11 +35,12 @@ void rakudo_p6_set_ok(int64_t p6ok)
     *ok = p6ok;
 }
 
-static char        *lib_path[4];
+static char        *lib_path[3];
 static char        *perl6_file;
 static char        *perl6_lib_path;
 static char        *helper_file;
 static char        *exec_dir_path;
+static char        *rdlib_path = NULL;
 static char        *exec_path = NULL;
 static char        *home;
 static MVMInstance *instance;
@@ -70,7 +71,7 @@ static int callback(struct dl_phdr_info *info, size_t size, void *data)
     const char *last_slash = strrchr(info->dlpi_name, '/');
 
     if (!strncmp(last_slash ? last_slash + 1 : info->dlpi_name, STRINGIFY(LIBFILENAME), strlen(STRINGIFY(LIBFILENAME))))
-        exec_path = strdup(info->dlpi_name);
+        rdlib_path = strdup(info->dlpi_name);
 
     return 0;
 }
@@ -97,20 +98,15 @@ void rakudo_init(int from_main, int argc, char *argv[], int64_t *main_ok)
 
     /* Retrieve the executable directory path. */
 
-    if (from_main) {
-        exec_path = strdup(argv[0]);
-    } else {
-        dl_iterate_phdr(callback, NULL);
-
-        if (!exec_path) {
-            puts("cannot find exec_path");
-            exit(EXIT_FAILURE);
-        }
+    dl_iterate_phdr(callback, NULL);
+    if (!rdlib_path) {
+        puts("cannot find rdlib_path");
+        exit(EXIT_FAILURE);
     }
 
 //    printf("from_main=%d, lpath=%s, argc = %d\n", from_main, exec_path, argc);
 
-    exec_dir_path = strdup(exec_path);
+    exec_dir_path = strdup(rdlib_path);
 
     slash_pos = strrchr(exec_dir_path, '/');
     if (slash_pos)
@@ -170,11 +166,15 @@ void rakudo_init(int from_main, int argc, char *argv[], int64_t *main_ok)
     memcpy(lib_path[2]    + home_size, perl6_home, perl6_home_size);
     memcpy(perl6_file     + home_size, perl6_home, perl6_home_size);
 
-    strcpy(perl6_lib_path + home_size, "/rakudroid/bin");
-    mkdir(perl6_lib_path, 0700);
-    strcpy(perl6_lib_path + home_size + 14, "/rakudroid");
-    symlink(exec_path, perl6_lib_path);
-    exec_path = strdup(perl6_lib_path);
+    if (from_main) {
+        exec_path = strdup(argv[0]);
+    } else {
+        strcpy(perl6_lib_path + home_size, "/rakudroid/bin");
+        mkdir(perl6_lib_path, 0700);
+        strcpy(perl6_lib_path + home_size + 14, "/rakudroid");
+        symlink(rdlib_path, perl6_lib_path);
+        exec_path = strdup(perl6_lib_path);
+    }
 
     strcpy(perl6_lib_path + home_size, perl6_lib);
     setenv("PERL6LIB", perl6_lib_path, 1);
@@ -186,15 +186,13 @@ void rakudo_init(int from_main, int argc, char *argv[], int64_t *main_ok)
     strcpy(perl6_file  + home_size + perl6_home_size, "/runtime/perl6.moarvm");
     strcpy(helper_file + home_size                  , helper_path);
 
-    lib_path[3] = NULL;
-
     /* Start up the VM. */
 
     instance = MVM_vm_create_instance();
 
     MVM_vm_set_prog_name(instance, perl6_file);
     MVM_vm_set_exec_name(instance, exec_path);
-    MVM_vm_set_lib_path(instance, 4, (const char **)lib_path);
+    MVM_vm_set_lib_path(instance, 3, (const char **)lib_path);
 
     if (from_main) {
         MVM_vm_set_clargs(instance, argc - 1, argv + 1);
@@ -202,10 +200,10 @@ void rakudo_init(int from_main, int argc, char *argv[], int64_t *main_ok)
         exit(EXIT_SUCCESS);
     }
 
-    /* close(2); */
-    /* open("/data/data/com.example.myapplication/files/stderr", O_APPEND | O_CREAT | O_WRONLY); */
+//    close(2);
+//    open("/data/data/com.example.myapplication/files/stderr", O_APPEND | O_CREAT | O_WRONLY);
 //    setenv("RAKUDO_MAX_THREADS", "2", 1);
-    /* setenv("RAKUDO_MODULE_DEBUG", "1", 1); */
+//    setenv("RAKUDO_MODULE_DEBUG", "1", 1);
 
     ok = main_ok;
     MVM_vm_set_clargs(instance, 0, NULL);
@@ -256,17 +254,18 @@ void rakudo_fini()
     free(perl6_file);
     free(home);
     free(exec_path);
+    free(rdlib_path);
 
     /* MVM_vm_destroy_instance(instance); */
 }
 
 char *rakudo_eval(char *perl6)
 {
-    MVM_gc_mark_thread_unblocked(instance->main_thread);
+//    MVM_gc_mark_thread_unblocked(instance->main_thread);
 
     char *ret = strdup(eval_p6(perl6));
 
-    MVM_gc_mark_thread_blocked(instance->main_thread);
+//    MVM_gc_mark_thread_blocked(instance->main_thread);
 
     return ret;
 }

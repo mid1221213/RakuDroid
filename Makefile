@@ -22,9 +22,12 @@ else
 $(error ARCH=$(ARCH) unknown, must be one of: $(ARCHS))
 endif
 
-RAKUDO          = rakudo-$(RELEASE)
-MOAR_BRANCH     = $(RELEASE)
-RAKUDO_DL       = https://github.com/rakudo/rakudo/releases/download/$(RELEASE)/$(RAKUDO).tar.gz
+RAKUDO          = rakudo
+#RAKUDO          = rakudo-$(RELEASE)
+#MOAR_BRANCH     = $(RELEASE)
+MOAR_BRANCH     = 2019.11
+RAKUDO_DL       = https://github.com/rakudo/rakudo/archive/master.zip
+#RAKUDO_DL       = https://github.com/rakudo/rakudo/releases/download/$(RELEASE)/$(RAKUDO).tar.gz
 
 BUILD_ARCH      = x86_64-pc-linux-gnu
 TARGET_ARCH     = $(ARCH)-linux-android$(API_VERSION)
@@ -45,10 +48,12 @@ CFLAGS_COM     += -I$(PREFIX_MOAR)/include/libatomic_ops
 CFLAGS_COM     += -I$(PREFIX_MOAR)/include/dyncall
 CFLAGS_COM     += -I$(PREFIX_MOAR)/include/libtommath
 
-P6_OPS_SO_DIR   = rakudo-$(RELEASE)/install/share/perl6/runtime/dynext
+#P6_OPS_SO_DIR   = rakudo-$(RELEASE)/install/share/perl6/runtime/dynext
+#P6_OPS_SO_DIR   = rakudo/install/share/perl6/runtime/dynext
+P6_OPS_SO_DIR   = .
 P6_OPS_SO       = $(P6_OPS_SO_DIR)/libperl6_ops_moar.so
 P6_OPS_SRCS     = $(RAKUDO)/src/vm/moar/ops/perl6_ops.c $(RAKUDO)/src/vm/moar/ops/container.c
-P6_OPS_CFLAGS   = $(CFLAGS_COM)
+P6_OPS_CFLAGS   = $(CFLAGS_COM) -D_REENTRANT -D_FILE_OFFSET_BITS=64 -fPIC -DMVM_HEAPSNAPSHOT_FORMAT=2
 P6_OPS_LDFLAGS  = -shared -L$(PREFIX_MOAR)/lib -Wl,-rpath-link=$(PREFIX_MOAR)/lib
 P6_OPS_LIBS     = -lmoar -lm -ldl
 
@@ -131,9 +136,10 @@ check:
 
 all: $(DROID_SO) $(MOAR_SO) $(P6_OPS_SO) $(P6_LIBDIR)/RakuDroidHelper.pm6 $(P6_LIBDIR)/RakuDroid.pm6 gen.touch
 
+#	git clone -b $(MOAR_BRANCH) https://github.com/MoarVM/MoarVM.git $(MOAR_TARGET)
 $(MOAR_TARGET).touch:
 	rm -rf $(MOAR_TARGET)
-	git clone -b $(MOAR_BRANCH) https://github.com/MoarVM/MoarVM.git $(MOAR_TARGET)
+	git clone https://github.com/MoarVM/MoarVM.git $(MOAR_TARGET)
 	cd $(MOAR_TARGET) && \
 		git submodule sync --quiet && git submodule --quiet update --init && \
 		git am ../src/librakudroid/0001-Make-MoarVM-cross-compile-nicely-for-Android.patch && \
@@ -147,23 +153,34 @@ $(MOAR_SO): $(PREFIX_MOAR)/lib/libmoar.so
 	mkdir -p $(DROID_SO_DIR)
 	cp -a $(PREFIX_MOAR)/lib/libmoar.so $(MOAR_SO)
 
-$(RAKUDO).touch: $(RAKUDO)
+# $(RAKUDO).touch: $(RAKUDO)
+# 	cd $(RAKUDO) && \
+# 		git submodule sync --quiet && git submodule --quiet update --init && \
+# 		MAKEFLAGS="-j" perl Configure.pl --gen-nqp --gen-moar --backends=moar --make-install --relocatable
+# 	touch $(RAKUDO).touch
+
+# $(RAKUDO).tar.gz:
+# 	wget $(RAKUDO_DL) -O $(RAKUDO).zip
+
+$(RAKUDO).touch:
+	rm -rf $(RAKUDO)
+	git clone https://github.com/rakudo/rakudo.git $(RAKUDO)
 	cd $(RAKUDO) && \
+		git am ../src/librakudroid/0001-PrecompilationRepository.pm6-flush-stdout-after-say.patch && \
+		git submodule sync --quiet && git submodule --quiet update --init && \
 		MAKEFLAGS="-j" perl Configure.pl --gen-nqp --gen-moar --backends=moar --make-install --relocatable
 	touch $(RAKUDO).touch
 
-$(RAKUDO).tar.gz:
-	wget $(RAKUDO_DL)
+# $(RAKUDO): $(RAKUDO).tar.gz
+# 	tar -xzf $(RAKUDO).tar.gz
 
-$(RAKUDO): $(RAKUDO).tar.gz
-	tar -xzf $(RAKUDO).tar.gz
-
-$(P6_LIBDIR)/RakuDroidHelper.pm6: src/librakudroid/RakuDroidHelper.pm6
+$(P6_LIBDIR):
 	mkdir -p $(P6_LIBDIR)
+
+$(P6_LIBDIR)/RakuDroidHelper.pm6: $(P6_LIBDIR) src/librakudroid/RakuDroidHelper.pm6
 	cp -a src/librakudroid/RakuDroidHelper.pm6 $(P6_LIBDIR)/
 
-$(P6_LIBDIR)/RakuDroid.pm6: src/librakudroid/RakuDroid.pm6
-	mkdir -p $(P6_LIBDIR)
+$(P6_LIBDIR)/RakuDroid.pm6: $(P6_LIBDIR) src/librakudroid/RakuDroid.pm6
 	cp -a src/librakudroid/RakuDroid.pm6 $(P6_LIBDIR)/
 
 $(DROID_SO): $(DROID_SRCS) $(DROID_HDRS) $(RAKUDO).touch $(MOAR_TARGET).touch
@@ -210,8 +227,13 @@ install: all
 	mkdir -p $(DROID_PREFIX)/res/layout
 	cp -a src/AndroidStudio/activity_main.xml $(DROID_PREFIX)/res/layout/
 	mkdir -p app/src/main/assets/rakudroid/share
-	cp -a rakudo-$(RELEASE)/install/share/perl6 app/src/main/assets/rakudroid/share/
-	cp -a rakudo-$(RELEASE)/install/share/nqp app/src/main/assets/rakudroid/share/
+	cp -a rakudo/install/share/perl6 app/src/main/assets/rakudroid/share/
+	mkdir -p app/src/main/assets/rakudroid/share/perl6/runtime/dynext
+	cp -a $(P6_OPS_SO) app/src/main/assets/rakudroid/share/perl6/runtime/dynext/
+	cp -a rakudo/install/share/nqp app/src/main/assets/rakudroid/share/
 	tar -czf MyApplication.tgz app
 	@echo
 	@echo Ok, now go to your Android project\'s root directory \(where the directory \'app\' resides\) and do \'tar -xzvf `pwd`/MyApplication.tgz\'
+
+#	cp -a rakudo-$(RELEASE)/install/share/perl6 app/src/main/assets/rakudroid/share/
+#	cp -a rakudo-$(RELEASE)/install/share/nqp app/src/main/assets/rakudroid/share/

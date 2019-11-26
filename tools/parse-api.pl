@@ -183,6 +183,12 @@ foreach my $line (<>) {
     }
 }
 
+$classes{$cur_class}{uses} = [ keys %seen_uses ] if $cur_class ne '';
+
+mkdirs('gen/provides');
+open(OUTPROVS, '>', "gen/provides") or die $!;
+say OUTPROVS "RakuDroid src/librakudroid/RakuDroid.pm6";
+
 foreach my $class (keys %classes) {
     my $n_class = "RakuDroid.$class";
     $n_class =~ s/\$/__/g;
@@ -198,11 +204,13 @@ foreach my $class (keys %classes) {
     my $role = $n_class;
     $role =~ s/::/Role::/;
 
+    say OUTPROVS "$role gen/$role_path.pm6";
     open(OUTROLE, '>', "gen/$role_path.pm6") or die $!;
     say OUTROLE "# GENERATED, don't edit or you'll loose!
 role $role {}";
     close(OUTROLE);
 
+    say OUTPROVS "$n_class gen/$path.pm6";
     open(OUT, '>', "gen/$path.pm6") or die $!;
 
     say OUT "# GENERATED, don't edit or you'll loose!
@@ -263,3 +271,5 @@ method $field_h->{name}() is rw {
 
     close(OUT);
 }
+
+close(OUTPROVS);
