@@ -81,13 +81,14 @@ sub sigjni2sigp6
 {
     my $sig = shift;
 
-    my (@objs, @sigobjs, $arr_level, $ret_obj, $seen_paren);
-    $arr_level = $seen_paren = 0;
+    my (@objs, @sigobjs, $arr_level, $ret_obj, $seen_paren, $seen_ret);
+    $arr_level = $seen_paren = $seen_ret = 0;
 
     push @objs, $1 while $sig =~ s/(L[^;]+;)/O/o;
 
     foreach my $c (split('', $sig)) {
 	my $obj6;
+	$seen_ret++ if $ret_obj;
 	if ($c eq 'O') {
 	    $obj6 = objjni2objp6(shift @objs);
 	} elsif ($c eq '[') {
@@ -95,18 +96,21 @@ sub sigjni2sigp6
 	    next;
 	} elsif ($c =~ /[\(\)]/) {
 	    $seen_paren++;
-	    $ret_obj++ if $c eq ')';
+	    if ($c eq ')') {
+		$ret_obj++;
+		$seen_ret = 0;
+	    }
 	    next;
 	} else {
 	    $obj6 = $JNI2P6{$c};
 	}
 
-	$obj6 = ('CArray[' x $arr_level) . $obj6 . (']' x $arr_level);
+	$obj6 = ('Array[' x $arr_level) . $obj6 . (']' x $arr_level);
 	$arr_level = 0;
 	push @sigobjs, $obj6;
     }
 
-    if ($ret_obj || !$seen_paren) {
+    if ($seen_ret || !$seen_paren) {
 	$ret_obj = pop(@sigobjs);
     } else {
 	$ret_obj = '';
@@ -116,22 +120,17 @@ sub sigjni2sigp6
     return (join(', ', map { "$_ \$arg" . $argnb++ } @sigobjs), $ret_obj, 0+@sigobjs);
 }
 
-my ($protec_all, $protec, $final, $abstract, $type, $name, $params, $extends_all, $extends, $extends_params, $impl_all, $impl, $static, $throws_all, $throws, $sig, $item_h);
+my ($protec_all, $protec, $final, $abstract, $type, $name, $params, $extends_prefix, $extends_all, $extends, $extends_params, $extends_inner, $impl_prefix, $impl_all, $impl, $impl_params, $impl_inner, $static, $throws_all, $throws, $sig, $item_h);
 my %seen_uses;
-
-# /data/data/com.example.myapplication/files/rakudroid/lib/RakuDroid/android/security/keystore/KeyProperties.pm6
-# /data/data/com.example.myapplication/files/rakudroid/lib/RakuDroid/android/view/Menu.pm6
-# /data/data/com.example.myapplication/files/rakudroid/lib/RakuDroid/com/android/internal/util/Predicate.pm6
 
 foreach my $line (<>) {
     1 while $line =~ s/\<[^\<\>]+\>//g;
 #    if (($protec_all, $protec, $final, $abstract, $type, $name, $params, $extends_all, $extends, $extends_params, $impl_all, $impl) = $line =~ /^((public|protected) )?(final )?(abstract )?(class|interface) ([\w\.\$]+)(\<.+)? (extends([, ]+([\w\.\$]+)(\<.+)?)+)?\s*(implements([, ]+([\w\.\$]+)(\<.+)?)+)?\s*\{/) {
-    if (($protec_all, $protec, $final, $abstract, $type, $name, $extends_all, $extends, $impl_all, $impl) = $line =~ /^((public|protected) )?(final )?(abstract )?(class|interface) ([\w\.\$]+) (extends([, ]+([\w\.\$]+))+)?\s*(implements([, ]+([\w\.\$]+))+)?\s*\{/) {
+    if (($protec_all, $protec, $final, $abstract, $type, $name, $params, $extends_prefix, $extends_all, $extends, $extends_params, $extends_inner, $impl_prefix, $impl_all, $impl, $impl_params, $impl_inner) = $line =~ /^((public|protected) )?(final )?(abstract )?(class|interface) ([\w\.\$]+)(\<.+\>)? (extends(([, ]+([\w\.\$]+)(\<.+\>)?)+))?\s*(implements(([, ]+([\w\.\$]+)(\<.+\>)?)+))?\s*\{/) {
 
 	$type = 'role' if $type eq 'interface';
-	# if (defined($impl)) {
-	#     $impl =~ s/\<[^>]+\>//g;
-	# }
+	$extends_all =~ s/^\s+// if defined($extends_all);
+	$impl_all =~ s/^\s+// if defined($impl_all);
 
 	$classes{$name} = {
 	    type     => $type,
@@ -139,8 +138,8 @@ foreach my $line (<>) {
 	    final    => $final,
 	    abstract => $abstract,
 	    name     => $name,
-	    extends  => $extends,
-	    impl     => defined($impl) ? [ split(/\s*,\s*/, $impl) ] : undef,
+	    extends  => $extends_all,
+	    impl     => defined($impl_all) ? [ split(/\s*,\s*/, $impl_all) ] : [],
 	    methods  => {},
 	    fields   => {},
 	};
@@ -149,7 +148,7 @@ foreach my $line (<>) {
 	$cur_class = $name;
 	%seen_uses = ();
 
-    } elsif (($sig) = $line =~ /^    descriptor: ([\w\/;\$\(\)]+)/) {
+    } elsif (($sig) = $line =~ /^    descriptor: ([\w\/;\$\(\)\[]+)/) {
 	$item_h->{sig} = $sig;
 	$seen_uses{$_}++ for sigjni2uses($sig);
 	if ($cur_type eq 'methods') {
@@ -208,6 +207,11 @@ foreach my $class (keys %classes) {
     open(OUTROLE, '>', "gen/$role_path.pm6") or die $!;
     say OUTROLE "# GENERATED, don't edit or you'll loose!
 role $role {}";
+    say OUTROLE "
+use MONKEY-TYPING;
+augment class Str {
+    also does RakuDroidRole::java::lang::String;
+}" if $role eq 'RakuDroidRole::java::lang::String';
     close(OUTROLE);
 
     say OUTPROVS "$n_class gen/$path.pm6";
@@ -224,9 +228,19 @@ use $role;
 	say OUT "use $used;" if exists($classes{$usedjni}) && $used ne $role;
     }
 
-    say OUT "
-unit $classes{$class}{type} $n_class does $role;
+    my $is_str = '';
+    $is_str = ' is Str' if $n_class eq 'RakuDroid::java::lang::String';
 
+    say OUT "
+unit $classes{$class}{type} $n_class$is_str does $role;
+";
+
+    foreach my $impl (sort @{$classes{$class}{impl}}) {
+	my $implp6 = objjni2objp6($impl);
+	say OUT "also does $implp6;";
+    }
+
+    say OUT "
 use RakuDroid;
 use NativeCall :types;
 
@@ -236,10 +250,12 @@ my RakuDroid \$rd = RakuDroid.new(:class-name('$class'));
 
     foreach my $method (keys %{$classes{$class}{methods}}) {
 	foreach my $method_h (@{$classes{$class}{methods}{$method}}) {
-	    next unless grep { exists($classes{objp62cljni($_)}) } sigjni2uses($method_h->{sig});
+	    my @sig_uses = sigjni2uses($method_h->{sig});
+	    next unless @sig_uses == 0 || @sig_uses == grep { exists($classes{objp62cljni($_)}) } @sig_uses;
 	    my ($args, $ret, $nbargs) = sigjni2sigp6($method_h->{sig});
 	    my $sigp6 = $args;
 	    $sigp6 .= " --> $ret" if $ret && $ret ne 'void';
+	    $sigp6 =~ s/^\s+//;
 	    say OUT "multi method $method_h->{name}($sigp6)
 {
     return \$rd.method-invoke(self, '$class', '$method_h->{name}', '$method_h->{sig}'" . join('', map { ", \$arg$_" } 1..$nbargs) . ");
