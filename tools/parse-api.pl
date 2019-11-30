@@ -56,12 +56,12 @@ sub objp62cljni
 {
     my $obj = shift;
 
-    return 'java.lang.String' if $obj eq 'Str';
+    return 'java/lang/String' if $obj eq 'Str';
     return $obj unless $obj =~ /^RakuDroidRole::/;
 
     $obj =~ s/__/\$/g;
-    $obj =~ s,::,.,g;
-    $obj =~ s,^RakuDroidRole\.,,;
+    $obj =~ s,::,/,g;
+    $obj =~ s,^RakuDroidRole/,,;
 
     return $obj;
 }
@@ -132,6 +132,7 @@ foreach my $line (<>) {
 	$extends_all =~ s/^\s+// if defined($extends_all);
 	$impl_all =~ s/^\s+// if defined($impl_all);
 
+	$name =~ s,\.,/,g;
 	$classes{$name} = {
 	    type     => $type,
 	    protec   => $protec,
@@ -158,6 +159,8 @@ foreach my $line (<>) {
 	}
     } elsif (($protec_all, $protec, $static, $final, $abstract, $name, $throws_all, $throws) = $line =~ /^  ((public|protected) )?(static )?(final )?(abstract )?.*?([\w\.\$]+)\(.*\)( throws (\S+))?;/) {
 	$classes{$cur_class}{methods}{$name} //= [];
+
+	$name =~ s,\.,/,g;
 	$name = 'new' if $name eq $cur_class;
 
 	$item_h = {
@@ -189,17 +192,15 @@ open(OUTPROVS, '>', "gen/provides") or die $!;
 say OUTPROVS "RakuDroid src/librakudroid/RakuDroid.pm6";
 
 foreach my $class (keys %classes) {
-    my $n_class = "RakuDroid.$class";
+    my $n_class = "RakuDroid/$class";
     $n_class =~ s/\$/__/g;
     my $path = $n_class;
-    $path =~ s,\.,/,g;
-    $path =~ s/$.*//;
     mkdirs($path);
     my $role_path = $path;
     $role_path =~ s,/,Role/,;
     mkdirs($role_path);
 
-    $n_class =~ s/\./::/g;
+    $n_class =~ s,/,::,g;
     my $role = $n_class;
     $role =~ s/::/Role::/;
 
@@ -245,7 +246,7 @@ use RakuDroid;
 use NativeCall :types;
 
 my RakuDroid \$rd = RakuDroid.new(:class-name('$class'));
-
+has Pointer \$.j-obj is rw;
 ";
 
     foreach my $method (keys %{$classes{$class}{methods}}) {
@@ -258,7 +259,7 @@ my RakuDroid \$rd = RakuDroid.new(:class-name('$class'));
 	    $sigp6 =~ s/^\s+//;
 	    say OUT "multi method $method_h->{name}($sigp6)
 {
-    return \$rd.method-invoke(self, '$class', '$method_h->{name}', '$method_h->{sig}'" . join('', map { ", \$arg$_" } 1..$nbargs) . ");
+    return \$rd.method-invoke(self, '$method_h->{name}', '$method_h->{sig}'" . join('', map { ", \$arg$_" } 1..$nbargs) . ");
 }
 ";
 	}

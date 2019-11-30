@@ -12,16 +12,19 @@ extern "C" {
 #define printf(...) __android_log_print(ANDROID_LOG_DEBUG, "RAKU", __VA_ARGS__);
 
 int64_t ok = 0;
+jobject myApp = nullptr;
+jobject myActivity = nullptr;
 
 JNIEnv *env;
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_example_myapplication_MyApplication_rakuInit(
         JNIEnv* envParam,
-        jobject /* this */,
+        jobject zis,
         jstring appDir) {
 
     env = envParam;
+    myApp = zis;
 
     const char *c_dir = env->GetStringUTFChars(appDir, nullptr);
     chdir(c_dir);
@@ -34,19 +37,36 @@ Java_com_example_myapplication_MyApplication_rakuInit(
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_example_myapplication_MainActivity_rakuEval(
         JNIEnv* /* env */,
-        jobject /* this */,
+        jobject zis,
         jstring toEval) {
 
-    const char *evalMe = env->GetStringUTFChars(toEval, nullptr);
+    char *ret_str;
+    const char *evalMe;
 
-    char *eval = rakudo_eval(const_cast<char *>(evalMe));
+    ok = 0;
+
+    if (!myActivity) {
+        myActivity = zis;
+
+        ret_str = rakudo_init_activity(static_cast<void *>(zis));
+        if (!ok) {
+            printf("Activity setup failed: %s\n", ret_str);
+            goto end;
+        }
+        free(ret_str);
+    }
+
+    evalMe = env->GetStringUTFChars(toEval, nullptr);
+
+    ret_str = rakudo_eval(const_cast<char *>(evalMe));
 
     env->ReleaseStringUTFChars(toEval, evalMe);
 
-//    auto ret = env->NewStringUTF(ok ? eval : "NOK");
-    auto ret = env->NewStringUTF(eval);
+end:
+//    auto ret = env->NewStringUTF(ok ? ret_str : "NOK");
+    auto ret = env->NewStringUTF(ret_str);
 
-    free(eval);
+    free(ret_str);
 
     return ret;
 }

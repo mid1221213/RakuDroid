@@ -19,12 +19,15 @@ static int argc = 0;
 static char **argv;
 
 typedef char *(*eval)(char *);
+typedef char *(*init_activity)(void *);
 
 eval eval_p6;
+init_activity init_activity_p6;
 
-void rakudo_p6_init(eval e)
+void rakudo_p6_init(eval e, init_activity i)
 {
     eval_p6 = e;
+    init_activity_p6 = i;
 }
 
 static int64_t *ok;
@@ -200,10 +203,10 @@ void rakudo_init(int from_main, int argc, char *argv[], int64_t *main_ok)
         exit(EXIT_SUCCESS);
     }
 
-//    close(2);
-//    open("/data/data/com.example.myapplication/files/stderr", O_APPEND | O_CREAT | O_WRONLY);
+    close(2);
+    open("/data/data/com.example.myapplication/files/stderr", O_APPEND | O_CREAT | O_WRONLY);
 //    setenv("RAKUDO_MAX_THREADS", "2", 1);
-//    setenv("RAKUDO_MODULE_DEBUG", "1", 1);
+    setenv("RAKUDO_MODULE_DEBUG", "1", 1);
 
     ok = main_ok;
     MVM_vm_set_clargs(instance, 0, NULL);
@@ -270,9 +273,14 @@ char *rakudo_eval(char *perl6)
     return ret;
 }
 
-void *method_invoke(char *name, char *sig, void *args[], int argNb)
+char *rakudo_init_activity(void *activity_ptr)
 {
-    printf("method_invoke(%s, %s, %p, %d\n", name, sig, args, argNb);
+    return strdup(init_activity_p6(activity_ptr));
+}
+
+void *method_invoke(char *class_name, char *name, char *sig, void *args[], uint32_t argNb)
+{
+    printf("method_invoke(%s, %s, %s, %p, %d\n", class_name, name, sig, args, argNb);
     return NULL;
 }
 

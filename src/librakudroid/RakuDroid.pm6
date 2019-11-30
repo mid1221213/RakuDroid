@@ -4,16 +4,16 @@ unit class RakuDroid;
 my %classes;
 has Str $.class-name;
 
-method new-obj(Str $class)
+method new-obj()
 {
-    return $class; # TBD
+    return $!class-name; # TBD
 }
 
 method TWEAK()
 {
     note "TWEAKing class $!class-name";
     unless %classes{$!class-name}:exists {
-	%classes{$!class-name} = self.new-obj($!class-name);
+	%classes{$!class-name} = self.new-obj;
 	note "created obj of class $!class-name";
     }
 }
@@ -23,7 +23,7 @@ method field-get($name, $type)
 #    return field_get($name, $type);
 }
 
-method method-invoke($obj, *@args)
+method method-invoke($obj, Str $name, Str $sig, *@args)
 {
-    return RakuDroidHelper::method-invoke(@args);
+    return RakuDroidHelper::method-invoke(self, $obj, $name, $sig, @args);
 }
