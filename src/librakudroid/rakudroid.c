@@ -7,8 +7,9 @@
 
 #include <android/log.h>
 
-#define printf(...) __android_log_print(ANDROID_LOG_DEBUG, "RAKU", __VA_ARGS__);
-#define puts(...) __android_log_print(ANDROID_LOG_DEBUG, "RAKU", __VA_ARGS__);
+#include "rakudroid_jni.h"
+
+#define printf(...) __android_log_print(ANDROID_LOG_DEBUG, "RAKUUUUUUUUUUUUUUUUU", __VA_ARGS__);
 
 #define STRINGIFY1(x) #x
 #define STRINGIFY(x) STRINGIFY1(x)
@@ -103,7 +104,7 @@ void rakudo_init(int from_main, int argc, char *argv[], int64_t *main_ok)
 
     dl_iterate_phdr(callback, NULL);
     if (!rdlib_path) {
-        puts("cannot find rdlib_path");
+        printf("cannot find rdlib_path\n");
         exit(EXIT_FAILURE);
     }
 
@@ -278,10 +279,36 @@ char *rakudo_init_activity(void *activity_ptr)
     return strdup(init_activity_p6(activity_ptr));
 }
 
-void *method_invoke(char *class_name, char *name, char *sig, void *args[], uint32_t argNb)
+void *method_invoke(char *class_name, void *obj, char *name, char *sig, void *args[], uint32_t argNb, char *ret_type,
+                    uint8_t *Z,
+                    uint8_t *B,
+                    int8_t  *C,
+                    int16_t *S,
+                    int     *I,
+                    int64_t *J,
+                    float   *F,
+                    double  *D
+    )
 {
-    printf("method_invoke(%s, %s, %s, %p, %d\n", class_name, name, sig, args, argNb);
-    return NULL;
+    args[argNb] = NULL;
+    printf("method_invoke(class_name='%s', obj='%p', method='%s', sig='%s', args='%p', args_nb='%d', ret_type=%c\n", class_name, obj, name, sig, args, argNb, ret_type[0]);
+    return jni_method_invoke(class_name, obj, name, sig, args, ret_type[0], Z, B, C, S, I, J, F, D);
+}
+
+void *static_method_invoke(char *class_name, char *name, char *sig, void *args[], uint32_t argNb, char *ret_type,
+                           uint8_t *Z,
+                           uint8_t *B,
+                           int8_t  *C,
+                           int16_t *S,
+                           int     *I,
+                           int64_t *J,
+                           float   *F,
+                           double  *D
+    )
+{
+    args[argNb] = NULL;
+    printf("static_method_invoke(class_name='%s', method='%s', sig='%s', args='%p', args_nb='%d', ret_type=%c\n", class_name, name, sig, args, argNb, ret_type[0]);
+    return jni_static_method_invoke(class_name, name, sig, args, ret_type[0], Z, B, C, S, I, J, F, D);
 }
 
 #define PRINT_EVAL(str) { char *ret = rakudo_eval(str); printf("« " str " » = %s%s\n", ok ? "" : "[NOK] → ", ret); free(ret); }

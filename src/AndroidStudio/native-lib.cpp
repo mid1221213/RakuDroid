@@ -4,18 +4,19 @@
 extern "C" {
 #include <android/log.h>
 #include "rakudroid.h"
+#include "rakudroid_jni.h"
 }
 
 #include <cstdlib>
 #include <unistd.h>
 
-#define printf(...) __android_log_print(ANDROID_LOG_DEBUG, "RAKU", __VA_ARGS__);
+#define printf(...) __android_log_print(ANDROID_LOG_DEBUG, "RAKUUUUUUUUUUUUUUUUU", __VA_ARGS__);
 
 int64_t ok = 0;
 jobject myApp = nullptr;
 jobject myActivity = nullptr;
 
-JNIEnv *env;
+static JNIEnv *env;
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_example_myapplication_MyApplication_rakuInit(
@@ -24,7 +25,9 @@ Java_com_example_myapplication_MyApplication_rakuInit(
         jstring appDir) {
 
     env = envParam;
-    myApp = zis;
+    jni_init_env(env);
+
+    myApp = env->NewGlobalRef(zis);
 
     const char *c_dir = env->GetStringUTFChars(appDir, nullptr);
     chdir(c_dir);
@@ -46,9 +49,9 @@ Java_com_example_myapplication_MainActivity_rakuEval(
     ok = 0;
 
     if (!myActivity) {
-        myActivity = zis;
+        myActivity = env->NewGlobalRef(zis);
 
-        ret_str = rakudo_init_activity(static_cast<void *>(zis));
+        ret_str = rakudo_init_activity(static_cast<void *>(myActivity));
         if (!ok) {
             printf("Activity setup failed: %s\n", ret_str);
             goto end;

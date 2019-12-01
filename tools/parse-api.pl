@@ -120,17 +120,68 @@ sub sigjni2sigp6
     return (join(', ', map { "$_ \$arg" . $argnb++ } @sigobjs), $ret_obj, 0+@sigobjs);
 }
 
-my ($protec_all, $protec, $final, $abstract, $type, $name, $params, $extends_prefix, $extends_all, $extends, $extends_params, $extends_inner, $impl_prefix, $impl_all, $impl, $impl_params, $impl_inner, $static, $throws_all, $throws, $sig, $item_h);
+my $item_h;
 my %seen_uses;
+my %seen_ruses;
+
+my $regex = qr/^
+    (
+      public|
+      protected
+    )
+    \s
+    (final\s)?
+    (abstract\s)?
+    (class|interface)
+    \s
+    ([\w\.\$]+)
+#    (\<.+\>)?
+    \s
+    (
+      extends\s
+      (
+        ([\w\.\$]+)
+#        (\<.+\>)?
+        (
+          \s*,\s*
+          ([\w\.\$]+)
+#          (\<.+\>)?
+        )*
+      )?\s
+    )?
+    (
+      implements\s
+      (
+        ([\w\.\$]+)
+#        (\<.+\>)?
+        (
+          \s*,\s*
+          ([\w\.\$]+)
+#          (\<.+\>)?
+        )*
+      )?\s
+    )?
+    \s*\{
+/x;
+
+my $dum;
+my ($protec, $final, $abstract, $type, $name, $extends_all, $extends, $impl_all, $impl);
+my $sig;
+my ($static, $throws_all, $throws);
 
 foreach my $line (<>) {
     1 while $line =~ s/\<[^\<\>]+\>//g;
-#    if (($protec_all, $protec, $final, $abstract, $type, $name, $params, $extends_all, $extends, $extends_params, $impl_all, $impl) = $line =~ /^((public|protected) )?(final )?(abstract )?(class|interface) ([\w\.\$]+)(\<.+)? (extends([, ]+([\w\.\$]+)(\<.+)?)+)?\s*(implements([, ]+([\w\.\$]+)(\<.+)?)+)?\s*\{/) {
-    if (($protec_all, $protec, $final, $abstract, $type, $name, $params, $extends_prefix, $extends_all, $extends, $extends_params, $extends_inner, $impl_prefix, $impl_all, $impl, $impl_params, $impl_inner) = $line =~ /^((public|protected) )?(final )?(abstract )?(class|interface) ([\w\.\$]+)(\<.+\>)? (extends(([, ]+([\w\.\$]+)(\<.+\>)?)+))?\s*(implements(([, ]+([\w\.\$]+)(\<.+\>)?)+))?\s*\{/) {
+    if (($protec, $final, $abstract, $type, $name, $extends_all, $extends, $dum, $dum, $dum, $impl_all, $impl) = $line =~ /^$regex/) {
 
 	$type = 'role' if $type eq 'interface';
-	$extends_all =~ s/^\s+// if defined($extends_all);
-	$impl_all =~ s/^\s+// if defined($impl_all);
+	if (defined($extends)) {
+	    $extends =~ s/^\s+//;
+	    $extends =~ s,\.,/,g;
+	}
+	if (defined($impl)) {
+	    $impl =~ s/^\s+//;
+	    $impl =~ s,\.,/,g;
+	}
 
 	$name =~ s,\.,/,g;
 	$classes{$name} = {
@@ -139,15 +190,28 @@ foreach my $line (<>) {
 	    final    => $final,
 	    abstract => $abstract,
 	    name     => $name,
-	    extends  => $extends_all,
-	    impl     => defined($impl_all) ? [ split(/\s*,\s*/, $impl_all) ] : [],
+	    extends  => $extends,
+	    impl     => defined($impl) ? [ split(/\s*,\s*/, $impl) ] : [],
 	    methods  => {},
 	    fields   => {},
 	};
 
-	$classes{$cur_class}{uses} = [ keys %seen_uses ] if $cur_class ne '';
+	$classes{$cur_class}{uses}  = [ keys %seen_uses  ] if $cur_class ne '';
+	$classes{$cur_class}{ruses} = [ keys %seen_ruses ] if $cur_class ne '';
+
 	$cur_class = $name;
-	%seen_uses = ();
+
+	%seen_uses  = ();
+	%seen_ruses = ();
+
+	if (defined($extends)) {
+	    $seen_uses{objjni2objp6($extends)}++;
+	    $seen_ruses{objjni2objp6($extends)}++;
+	}
+	if (defined($impl)) {
+	    $seen_uses{objjni2objp6($_)}++ for split(/\s*,\s*/, $impl);
+	    $seen_ruses{objjni2objp6($_)}++ for split(/\s*,\s*/, $impl);
+	}
 
     } elsif (($sig) = $line =~ /^    descriptor: ([\w\/;\$\(\)\[]+)/) {
 	$item_h->{sig} = $sig;
@@ -157,7 +221,7 @@ foreach my $line (<>) {
 	} else {
 	    $classes{$cur_class}{$cur_type}{$cur_member} = $item_h;
 	}
-    } elsif (($protec_all, $protec, $static, $final, $abstract, $name, $throws_all, $throws) = $line =~ /^  ((public|protected) )?(static )?(final )?(abstract )?.*?([\w\.\$]+)\(.*\)( throws (\S+))?;/) {
+    } elsif (($protec, $static, $final, $abstract, $name, $throws_all, $throws) = $line =~ /^  (public|protected) (static )?(final )?(abstract )?.*?([\w\.\$]+)\(.*\)( throws (\S+))?;/) {
 	$classes{$cur_class}{methods}{$name} //= [];
 
 	$name =~ s,\.,/,g;
@@ -172,7 +236,7 @@ foreach my $line (<>) {
 	};
 	$cur_type = 'methods';
 	$cur_member = $name;
-    } elsif (($protec_all, $protec, $static, $final, $name) = $line =~ /^  ((public|protected) )?(static )?(final )?.*?([\w\.\$]+);/) {
+    } elsif (($protec, $static, $final, $name) = $line =~ /^  (public|protected) (static )?(final )?.*?([\w\.\$]+);/) {
 	$name =~ s/\./-/g;
 	$item_h = {
 	    protec   => $protec,
@@ -185,7 +249,8 @@ foreach my $line (<>) {
     }
 }
 
-$classes{$cur_class}{uses} = [ keys %seen_uses ] if $cur_class ne '';
+$classes{$cur_class}{uses}  = [ keys %seen_uses ]  if $cur_class ne '';
+$classes{$cur_class}{ruses} = [ keys %seen_ruses ] if $cur_class ne '';
 
 mkdirs('gen/provides');
 open(OUTPROVS, '>', "gen/provides") or die $!;
@@ -205,19 +270,19 @@ foreach my $class (keys %classes) {
     $role =~ s/::/Role::/;
 
     say OUTPROVS "$role gen/$role_path.pm6";
+    say OUTPROVS "$n_class gen/$path.pm6";
+
     open(OUTROLE, '>', "gen/$role_path.pm6") or die $!;
-    say OUTROLE "# GENERATED, don't edit or you'll loose!
-role $role {}";
+    say OUTROLE "# GENERATED, don't edit or you'll loose!";
     say OUTROLE "
 use MONKEY-TYPING;
 augment class Str {
     also does RakuDroidRole::java::lang::String;
 }" if $role eq 'RakuDroidRole::java::lang::String';
-    close(OUTROLE);
 
-    say OUTPROVS "$n_class gen/$path.pm6";
+    say OUTROLE "unit role $role;";
+
     open(OUT, '>', "gen/$path.pm6") or die $!;
-
     say OUT "# GENERATED, don't edit or you'll loose!
 
 use $role;
@@ -225,8 +290,12 @@ use $role;
 
     foreach my $used (sort grep { $_ ne $n_class } @{$classes{$class}{uses}}) {
 	my $usedjni = objp62cljni($used);
-#	say OUT "try require $used;" if exists($classes{$usedjni}) && $classes{$usedjni}{type} ne 'role';
 	say OUT "use $used;" if exists($classes{$usedjni}) && $used ne $role;
+    }
+
+    foreach my $rused (sort grep { $_ ne $n_class } @{$classes{$class}{ruses}}) {
+	my $rusedjni = objp62cljni($rused);
+	say OUTROLE "use $rused;" if exists($classes{$rusedjni}) && $rused ne $role;
     }
 
     my $is_str = '';
@@ -236,20 +305,31 @@ use $role;
 unit $classes{$class}{type} $n_class$is_str does $role;
 ";
 
+    if (defined($classes{$class}{extends})) {
+	my $extendsp6 = objjni2objp6($classes{$class}{extends});
+	say OUTROLE "also does $extendsp6;";
+	say OUT "also does $extendsp6;";
+    }
+
     foreach my $impl (sort @{$classes{$class}{impl}}) {
 	my $implp6 = objjni2objp6($impl);
+	say OUTROLE "also does $implp6;";
 	say OUT "also does $implp6;";
     }
 
     say OUT "
 use RakuDroid;
 use NativeCall :types;
+my constant Pointer = NativeCall::Types::Pointer;
 
 my RakuDroid \$rd = RakuDroid.new(:class-name('$class'));
 has Pointer \$.j-obj is rw;
 ";
 
     foreach my $method (keys %{$classes{$class}{methods}}) {
+	my $multi = @{$classes{$class}{methods}{$method}} > 1 ? 'multi ' : '';
+	say OUT "our proto $method(|) { * }" if $multi && defined($classes{$class}{methods}{$method}[0]{static});
+
 	foreach my $method_h (@{$classes{$class}{methods}{$method}}) {
 	    my @sig_uses = sigjni2uses($method_h->{sig});
 	    next unless @sig_uses == 0 || @sig_uses == grep { exists($classes{objp62cljni($_)}) } @sig_uses;
@@ -257,11 +337,20 @@ has Pointer \$.j-obj is rw;
 	    my $sigp6 = $args;
 	    $sigp6 .= " --> $ret" if $ret && $ret ne 'void';
 	    $sigp6 =~ s/^\s+//;
-	    say OUT "multi method $method_h->{name}($sigp6)
+
+	    if (defined($method_h->{static})) {
+		say OUT "${multi}sub $method_h->{name}($sigp6)
 {
-    return \$rd.method-invoke(self, '$method_h->{name}', '$method_h->{sig}'" . join('', map { ", \$arg$_" } 1..$nbargs) . ");
+    return \$rd.static-method-invoke('$method_h->{name}', '$method_h->{sig}', :($sigp6)" . join('', map { ", \$arg$_" } 1..$nbargs) . ");
 }
 ";
+	    } else {
+	    say OUT "${multi}method $method_h->{name}($sigp6)
+{
+    return \$rd.method-invoke(self, '$method_h->{name}', '$method_h->{sig}', :($sigp6)" . join('', map { ", \$arg$_" } 1..$nbargs) . ");
+}
+"
+	    };
 	}
     }
 
@@ -286,6 +375,7 @@ method $field_h->{name}() is rw {
 ";
     }
 
+    close(OUTROLE);
     close(OUT);
 }
 

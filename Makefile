@@ -59,12 +59,16 @@ P6_OPS_LIBS     = -lmoar -lm -ldl
 
 DROID_PREFIX    = app/src/main
 
-DROID_SRCS      = src/librakudroid/rakudroid.c
+DROID_CSRCS     = src/librakudroid/rakudroid.c
+DROID_CPPSRCS   = src/librakudroid/rakudroid_jni.cpp
+DROID_SRCS      = $(DROID_CSRCS) $(DROID_CPPSRCS)
 
-DROID_HDRS      = src/librakudroid/rakudroid.h
+DROID_HDRS      = src/librakudroid/rakudroid.h src/librakudroid/rakudroid_jni.h
 
 DROID_SO_DIR    = $(DROID_PREFIX)/jniLibs/$(JNI_ARCH)
 DROID_SO_NAME   = librakudroid.so
+DROID_C_O       = src/librakudroid/rakudroid.o
+DROID_CPP_O     = src/librakudroid/rakudroid_jni.o
 DROID_SO        = $(DROID_SO_DIR)/$(DROID_SO_NAME)
 MOAR_SO         = $(DROID_SO_DIR)/libmoar.so
 
@@ -134,7 +138,7 @@ check:
 	fi
 
 
-all: $(DROID_SO) $(MOAR_SO) $(P6_OPS_SO) $(P6_LIBDIR)/RakuDroidHelper.pm6 $(P6_LIBDIR)/RakuDroid.pm6 gen.touch
+all: $(DROID_SO) $(MOAR_SO) $(P6_OPS_SO) $(P6_LIBDIR)/RakuDroidHelper.pm6 $(P6_LIBDIR)/RakuDroidJValue.pm6 $(P6_LIBDIR)/RakuDroid.pm6 gen.touch
 
 #	git clone -b $(MOAR_BRANCH) https://github.com/MoarVM/MoarVM.git $(MOAR_TARGET)
 $(MOAR_TARGET).touch:
@@ -180,12 +184,17 @@ $(P6_LIBDIR):
 $(P6_LIBDIR)/RakuDroidHelper.pm6: $(P6_LIBDIR) src/librakudroid/RakuDroidHelper.pm6
 	cp -a src/librakudroid/RakuDroidHelper.pm6 $(P6_LIBDIR)/
 
+$(P6_LIBDIR)/RakuDroidJValue.pm6: $(P6_LIBDIR) src/librakudroid/RakuDroidJValue.pm6
+	cp -a src/librakudroid/RakuDroidJValue.pm6 $(P6_LIBDIR)/
+
 $(P6_LIBDIR)/RakuDroid.pm6: $(P6_LIBDIR) src/librakudroid/RakuDroid.pm6
 	cp -a src/librakudroid/RakuDroid.pm6 $(P6_LIBDIR)/
 
 $(DROID_SO): $(DROID_SRCS) $(DROID_HDRS) $(RAKUDO).touch $(MOAR_TARGET).touch
 	mkdir -p $(DROID_SO_DIR)
-	$(CC) $(DROID_CFLAGS) $(DROID_LDFLAGS) -o $(DROID_SO) $(DROID_DEFINES) $(DROID_SRCS) $(DROID_LIBS)
+	$(CC)  $(DROID_CFLAGS) -c -o $(DROID_C_O)   $(DROID_DEFINES) $(DROID_CSRCS)
+	$(CC) $(DROID_CFLAGS) -c -o $(DROID_CPP_O) $(DROID_DEFINES) $(DROID_CPPSRCS)
+	$(CC) $(DROID_LDFLAGS)    -o $(DROID_SO) $(DROID_CPP_O) $(DROID_C_O) $(DROID_LIBS)
 
 $(P6_OPS_SRCS): $(RAKUDO).touch
 
@@ -221,7 +230,7 @@ install: all
 	cp -a src/AndroidStudio/AndroidManifest.xml $(DROID_PREFIX)/
 	cp -a src/AndroidStudio/MainActivity.kt src/AndroidStudio/MyApplication.kt src/AndroidStudio/Utils.kt $(DROID_PREFIX)/java/$(PROJ_JAVA_PATH)/
 	mkdir -p $(DROID_PREFIX)/cpp
-	cp -a src/AndroidStudio/CMakeLists.txt src/librakudroid/rakudroid.h src/AndroidStudio/native-lib.cpp $(DROID_PREFIX)/cpp/
+	cp -a src/AndroidStudio/CMakeLists.txt src/librakudroid/rakudroid.h src/librakudroid/rakudroid_jni.h src/AndroidStudio/native-lib.cpp $(DROID_PREFIX)/cpp/
 	mkdir -p $(DROID_PREFIX)/res/values
 	cp -a src/AndroidStudio/styles.xml $(DROID_PREFIX)/res/values/
 	mkdir -p $(DROID_PREFIX)/res/layout
