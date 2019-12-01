@@ -1,5 +1,4 @@
-use NativeCall::Types;
-my constant Pointer = NativeCall::Types::Pointer;
+use NativeCall :types;
 
 class RakuDroidJValue is repr('CUnion') {
     has uint8   $.bool;

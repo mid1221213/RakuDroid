@@ -59,16 +59,11 @@ P6_OPS_LIBS     = -lmoar -lm -ldl
 
 DROID_PREFIX    = app/src/main
 
-DROID_CSRCS     = src/librakudroid/rakudroid.c
-DROID_CPPSRCS   = src/librakudroid/rakudroid_jni.cpp
-DROID_SRCS      = $(DROID_CSRCS) $(DROID_CPPSRCS)
-
+DROID_SRCS     = src/librakudroid/rakudroid.c src/librakudroid/rakudroid_jni.cpp
 DROID_HDRS      = src/librakudroid/rakudroid.h src/librakudroid/rakudroid_jni.h
 
 DROID_SO_DIR    = $(DROID_PREFIX)/jniLibs/$(JNI_ARCH)
 DROID_SO_NAME   = librakudroid.so
-DROID_C_O       = src/librakudroid/rakudroid.o
-DROID_CPP_O     = src/librakudroid/rakudroid_jni.o
 DROID_SO        = $(DROID_SO_DIR)/$(DROID_SO_NAME)
 MOAR_SO         = $(DROID_SO_DIR)/libmoar.so
 
@@ -192,9 +187,7 @@ $(P6_LIBDIR)/RakuDroid.pm6: $(P6_LIBDIR) src/librakudroid/RakuDroid.pm6
 
 $(DROID_SO): $(DROID_SRCS) $(DROID_HDRS) $(RAKUDO).touch $(MOAR_TARGET).touch
 	mkdir -p $(DROID_SO_DIR)
-	$(CC)  $(DROID_CFLAGS) -c -o $(DROID_C_O)   $(DROID_DEFINES) $(DROID_CSRCS)
-	$(CC) $(DROID_CFLAGS) -c -o $(DROID_CPP_O) $(DROID_DEFINES) $(DROID_CPPSRCS)
-	$(CC) $(DROID_LDFLAGS)    -o $(DROID_SO) $(DROID_CPP_O) $(DROID_C_O) $(DROID_LIBS)
+	$(CC) $(DROID_CFLAGS) $(DROID_DEFINES) $(DROID_LDFLAGS) -o $(DROID_SO) $(DROID_SRCS) $(DROID_LIBS)
 
 $(P6_OPS_SRCS): $(RAKUDO).touch
 

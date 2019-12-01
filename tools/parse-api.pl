@@ -320,7 +320,6 @@ unit $classes{$class}{type} $n_class$is_str does $role;
     say OUT "
 use RakuDroid;
 use NativeCall :types;
-my constant Pointer = NativeCall::Types::Pointer;
 
 my RakuDroid \$rd = RakuDroid.new(:class-name('$class'));
 has Pointer \$.j-obj is rw;
