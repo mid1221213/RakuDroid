@@ -25,7 +25,7 @@ endif
 RAKUDO          = rakudo
 #RAKUDO          = rakudo-$(RELEASE)
 #MOAR_BRANCH     = $(RELEASE)
-MOAR_BRANCH     = 2019.11
+MOAR_BRANCH     = 2019.07.1
 RAKUDO_DL       = https://github.com/rakudo/rakudo/archive/master.zip
 #RAKUDO_DL       = https://github.com/rakudo/rakudo/releases/download/$(RELEASE)/$(RAKUDO).tar.gz
 
@@ -135,10 +135,10 @@ check:
 
 all: $(DROID_SO) $(MOAR_SO) $(P6_OPS_SO) $(P6_LIBDIR)/RakuDroidHelper.pm6 $(P6_LIBDIR)/RakuDroidJValue.pm6 $(P6_LIBDIR)/RakuDroid.pm6 gen.touch
 
-#	git clone -b $(MOAR_BRANCH) https://github.com/MoarVM/MoarVM.git $(MOAR_TARGET)
+#	git clone https://github.com/MoarVM/MoarVM.git $(MOAR_TARGET)
 $(MOAR_TARGET).touch:
 	rm -rf $(MOAR_TARGET)
-	git clone https://github.com/MoarVM/MoarVM.git $(MOAR_TARGET)
+	git clone -b $(MOAR_BRANCH) https://github.com/MoarVM/MoarVM.git $(MOAR_TARGET)
 	cd $(MOAR_TARGET) && \
 		git submodule sync --quiet && git submodule --quiet update --init && \
 		git am ../src/librakudroid/0001-Make-MoarVM-cross-compile-nicely-for-Android.patch && \

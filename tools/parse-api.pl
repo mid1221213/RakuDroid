@@ -234,9 +234,9 @@ foreach my $line (<>) {
 	    abstract => $abstract,
 	    name     => $name,
 	};
-	$cur_type = 'methods';
+	$cur_type = $name eq 'new' ? 'ctors' : 'methods';
 	$cur_member = $name;
-    } elsif (($protec, $static, $final, $name) = $line =~ /^  (public|protected) (static )?(final )?.*?([\w\.\$]+);/) {
+    } elsif (($dum, $protec, $static, $final, $name) = $line =~ /^  ((public|protected) )?(static )?(final )?.*?([\w\.\$]+);/) {
 	$name =~ s/\./-/g;
 	$item_h = {
 	    protec   => $protec,
@@ -255,6 +255,7 @@ $classes{$cur_class}{ruses} = [ keys %seen_ruses ] if $cur_class ne '';
 mkdirs('gen/provides');
 open(OUTPROVS, '>', "gen/provides") or die $!;
 say OUTPROVS "RakuDroid src/librakudroid/RakuDroid.pm6";
+say OUTPROVS "RakuDroidJValue src/librakudroid/RakuDroidJValue.pm6";
 
 foreach my $class (keys %classes) {
     my $n_class = "RakuDroid/$class";
@@ -273,15 +274,11 @@ foreach my $class (keys %classes) {
     say OUTPROVS "$n_class gen/$path.pm6";
 
     open(OUTROLE, '>', "gen/$role_path.pm6") or die $!;
-    say OUTROLE "# GENERATED, don't edit or you'll loose!";
-    say OUTROLE "
-use MONKEY-TYPING;
-augment class Str {
-    also does RakuDroidRole::java::lang::String;
-}" if $role eq 'RakuDroidRole::java::lang::String';
+    say OUTROLE "# GENERATED, don't edit or you'll loose!
 
-    say OUTROLE "unit role $role;";
+unit role $role;";
 
+    say OUTROLE "also does RakuDroidRole::java::lang::Object;" unless $role eq 'RakuDroidRole::java::lang::Object';
     open(OUT, '>', "gen/$path.pm6") or die $!;
     say OUT "# GENERATED, don't edit or you'll loose!
 
