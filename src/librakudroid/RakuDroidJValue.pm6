@@ -41,15 +41,15 @@ class RakuDroidJValue is repr('CStruct')
 
     method gist() {
 	given $!type {
-	    when ord('s') { $!val.str.Str     }
-	    when ord('Z') { $!val.bool.so.Str }
-	    when ord('B') { my uint8 $val = $!val.uint8; $val.Str }
-	    when ord('C') { $!val.int8.Str    }
-	    when ord('S') { $!val.int16.Str   }
-	    when ord('I') { $!val.int.Str     }
-	    when ord('J') { $!val.int64.Str   }
-	    when ord('F') { $!val.num32.Str   }
-	    when ord('D') { $!val.num64.Str   }
+	    when 's'.ord { $!val.str.Str     }
+	    when 'Z'.ord { $!val.bool.so.Str }
+	    when 'B'.ord { my uint8 $val = $!val.uint8; $val.Str }
+	    when 'C'.ord { $!val.int8.Str    }
+	    when 'S'.ord { $!val.int16.Str   }
+	    when 'I'.ord { $!val.int.Str     }
+	    when 'J'.ord { $!val.int64.Str   }
+	    when 'F'.ord { $!val.num32.Str   }
+	    when 'D'.ord { $!val.num64.Str   }
 	    default  { 'Pointer.new(0x' ~ $!val.pointer.Int.base(16) ~ ')' }
 	}
     }
@@ -58,30 +58,30 @@ class RakuDroidJValue is repr('CStruct')
 
     method Int() {
 	given $!type {
-	    when ord('s') { $!val.str.Int     }
-	    when ord('Z') { $!val.bool.so.Int }
-	    when ord('B') { my uint8 $val = $!val.uint8; $val.Int }
-	    when ord('C') { $!val.int8.Int    }
-	    when ord('S') { $!val.int16.Int   }
-	    when ord('I') { $!val.int.Int     }
-	    when ord('J') { $!val.int64.Int   }
-	    when ord('F') { $!val.num32.Int   }
-	    when ord('D') { $!val.num64.Int   }
+	    when 's'.ord { $!val.str.Int     }
+	    when 'Z'.ord { $!val.bool.so.Int }
+	    when 'B'.ord { my uint8 $val = $!val.uint8; $val.Int }
+	    when 'C'.ord { $!val.int8.Int    }
+	    when 'S'.ord { $!val.int16.Int   }
+	    when 'I'.ord { $!val.int.Int     }
+	    when 'J'.ord { $!val.int64.Int   }
+	    when 'F'.ord { $!val.num32.Int   }
+	    when 'D'.ord { $!val.num64.Int   }
 	    default  { $!val.pointer.Int }
 	}
     }
 
     method Num() {
 	given $!type {
-	    when ord('s') { $!val.str.Num     }
-	    when ord('Z') { $!val.bool.so.Num }
-	    when ord('B') { my uint8 $val = $!val.uint8; $val.Num }
-	    when ord('C') { $!val.int8.Num    }
-	    when ord('S') { $!val.int16.Num   }
-	    when ord('I') { $!val.int.Num     }
-	    when ord('J') { $!val.int64.Num   }
-	    when ord('F') { $!val.num32.Num   }
-	    when ord('D') { $!val.num64.Num   }
+	    when 's'.ord { $!val.str.Num     }
+	    when 'Z'.ord { $!val.bool.so.Num }
+	    when 'B'.ord { my uint8 $val = $!val.uint8; $val.Num }
+	    when 'C'.ord { $!val.int8.Num    }
+	    when 'S'.ord { $!val.int16.Num   }
+	    when 'I'.ord { $!val.int.Num     }
+	    when 'J'.ord { $!val.int64.Num   }
+	    when 'F'.ord { $!val.num32.Num   }
+	    when 'D'.ord { $!val.num64.Num   }
 	    default  { $!val.pointer.Num }
 	}
     }
