@@ -26,25 +26,28 @@ method field-get($name, $type)
 #    return field_get($name, $type);
 }
 
-sub process-args(Signature $s, @args --> Array[RakuDroidJValue])
+sub process-args(@args --> Array[RakuDroidJValue])
 {
     my RakuDroidJValue @a;
 
-    for $s.params -> $p {
+    for Backtrace.new[4].code.signature.params -> $p {
 	my $ret = @args.shift;
 	given $p.type {
-	    when Str   { @a.push(RakuDroidJValue.new-with-val('s', $ret)) }
-	    when bool  { @a.push(RakuDroidJValue.new-with-val('Z', $ret)) }
-	    when uint8 { @a.push(RakuDroidJValue.new-with-val('B', $ret)) }
-	    when int8  { @a.push(RakuDroidJValue.new-with-val('C', $ret)) }
-	    when int16 { @a.push(RakuDroidJValue.new-with-val('S', $ret)) }
-	    when int   { @a.push(RakuDroidJValue.new-with-val('I', $ret)) }
-	    when int64 { @a.push(RakuDroidJValue.new-with-val('J', $ret)) }
-	    when num32 { @a.push(RakuDroidJValue.new-with-val('F', $ret)) }
-	    when num64 { @a.push(RakuDroidJValue.new-with-val('D', $ret)) }
+	    when Str   { @a.push(RakuDroidJValue.new(:type<s>, :val($ret))) }
+	    when bool  { @a.push(RakuDroidJValue.new(:type<Z>, :val($ret))) }
+	    when uint8 { @a.push(RakuDroidJValue.new(:type<B>, :val($ret))) }
+	    when int8  { @a.push(RakuDroidJValue.new(:type<C>, :val($ret))) }
+	    when int16 { @a.push(RakuDroidJValue.new(:type<S>, :val($ret))) }
+	    when int   { @a.push(RakuDroidJValue.new(:type<I>, :val($ret))) }
+	    when int64 { @a.push(RakuDroidJValue.new(:type<J>, :val($ret))) }
+	    when num32 { @a.push(RakuDroidJValue.new(:type<F>, :val($ret))) }
+	    when num64 { @a.push(RakuDroidJValue.new(:type<D>, :val($ret))) }
 	    default    {
-		@a.push(RakuDroidJValue.new-with-val('s', $ret)) if $ret ~~ Str;
-		@a.push(RakuDroidJValue.new-with-val(';', $ret.j-obj));
+		if $ret ~~ Str {
+		    @a.push(RakuDroidJValue.new(:type<s>, :val($ret)));
+		} else {
+		    @a.push(RakuDroidJValue.new(:type<;>, :val($ret.j-obj)));
+		}
 	    }
 	}
     }
@@ -52,17 +55,17 @@ sub process-args(Signature $s, @args --> Array[RakuDroidJValue])
     return @a;
 }
 
-method ctor-invoke(Str $sig, Signature $s, *@args)
+method ctor-invoke(Str $sig, *@args)
 {
-    return RakuDroidHelper::ctor-invoke(self, $sig, process-args($s, @args));
+    return RakuDroidHelper::ctor-invoke(self, $sig, process-args(@args));
 }
 
-method method-invoke($obj, Str $name, Str $sig, Signature $s, *@args)
+method method-invoke($obj, Str $name, Str $sig, *@args)
 {
-    return RakuDroidHelper::method-invoke(self, $obj, $name, $sig, process-args($s, @args));
+    return RakuDroidHelper::method-invoke(self, $obj, $name, $sig, process-args(@args));
 }
 
-method static-method-invoke(Str $name, Str $sig, Signature $s, *@args)
+method static-method-invoke(Str $name, Str $sig, *@args)
 {
-    return RakuDroidHelper::static-method-invoke(self, $name, $sig, process-args($s, @args));
+    return RakuDroidHelper::static-method-invoke(self, $name, $sig, process-args(@args));
 }

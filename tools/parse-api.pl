@@ -234,7 +234,7 @@ foreach my $line (<>) {
 	    abstract => $abstract,
 	    name     => $name,
 	};
-	$cur_type = $name eq 'new' ? 'ctors' : 'methods';
+	$cur_type = 'methods';
 	$cur_member = $name;
     } elsif (($dum, $protec, $static, $final, $name) = $line =~ /^  ((public|protected) )?(static )?(final )?.*?([\w\.\$]+);/) {
 	$name =~ s/\./-/g;
@@ -334,16 +334,22 @@ has Pointer \$.j-obj is rw;
 	    $sigp6 .= " --> $ret" if $ret && $ret ne 'void';
 	    $sigp6 =~ s/^\s+//;
 
-	    if (defined($method_h->{static})) {
+	    if ($method_h->{name} eq 'new') {
+		say OUT "${multi}method $method_h->{name}($sigp6)
+{
+    return \$rd.ctor-invoke(self, '$method_h->{sig}'" . join('', map { ", \$arg$_" } 1..$nbargs) . ");
+}
+";
+	    } elsif (defined($method_h->{static})) {
 		say OUT "${multi}sub $method_h->{name}($sigp6)
 {
-    return \$rd.static-method-invoke('$method_h->{name}', '$method_h->{sig}', :($sigp6)" . join('', map { ", \$arg$_" } 1..$nbargs) . ");
+    return \$rd.static-method-invoke('$method_h->{name}', '$method_h->{sig}'" . join('', map { ", \$arg$_" } 1..$nbargs) . ");
 }
 ";
 	    } else {
 	    say OUT "${multi}method $method_h->{name}($sigp6)
 {
-    return \$rd.method-invoke(self, '$method_h->{name}', '$method_h->{sig}', :($sigp6)" . join('', map { ", \$arg$_" } 1..$nbargs) . ");
+    return \$rd.method-invoke(self, '$method_h->{name}', '$method_h->{sig}'" . join('', map { ", \$arg$_" } 1..$nbargs) . ");
 }
 "
 	    };

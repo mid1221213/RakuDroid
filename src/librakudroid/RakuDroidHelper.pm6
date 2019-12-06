@@ -61,13 +61,15 @@ rakudo_p6_init(&helper_eval, &helper_init_activity);
 
 sub common-invoke-pre(Str $sig --> Str)
 {
-    my $ret-type = $sig.chars ?? substr($sig, *) !! 'V';
+    return 'V' unless $sig.chars;
+
+    my $ret-type = substr($sig, *);
 
     if $ret-type eq ';' {
 	$ret-type = $sig;
 	$ret-type ~~ s/L (<-[\;]>+) \; $ /$0/;
 
-	return 's' if $ret-type eq 'java/lang/string'; # special Str case
+	return 's' if $ret-type eq 'java/lang/String'; # special Str case
 
 	$ret-type ~~ s:g,/,::,;
 	$ret-type ~~ s:g/\$/__/;
