@@ -15,9 +15,11 @@ ARCHS           = x86_64 aarch64
 ifeq ($(ARCH),x86_64)
 SDK_ARCH        = arch-x86_64
 JNI_ARCH        = $(ARCH)
+JIT             = --jit
 else ifeq ($(ARCH),aarch64)
 SDK_ARCH        = arch-arm64
 JNI_ARCH        = arm64-v8a
+JIT             = --no-jit
 else
 $(error ARCH=$(ARCH) unknown, must be one of: $(ARCHS))
 endif
@@ -142,7 +144,7 @@ $(MOAR_TARGET).touch:
 	cd $(MOAR_TARGET) && \
 		git submodule sync --quiet && git submodule --quiet update --init && \
 		git am ../src/librakudroid/0001-Make-MoarVM-cross-compile-nicely-for-Android.patch && \
-		MAKEFLAGS="-j" perl Configure.pl --build=$(BUILD_ARCH) --host=$(TARGET_ARCH) --no-jit --relocatable && \
+		MAKEFLAGS="-j" perl Configure.pl --build=$(BUILD_ARCH) --host=$(TARGET_ARCH) $(JIT) --relocatable && \
 		MAKEFLAGS="-j" make install
 	touch $(MOAR_TARGET).touch
 
