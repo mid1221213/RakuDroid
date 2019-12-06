@@ -201,7 +201,7 @@ void rakudo_init(int from_main, int argc, char *argv[], int64_t *main_ok)
     if (from_main) {
         MVM_vm_set_clargs(instance, argc - 1, argv + 1);
         MVM_vm_run_file(instance, perl6_file);
-        exit(EXIT_SUCCESS);
+        MVM_vm_exit(instance); // does not return
     }
 
     close(2);

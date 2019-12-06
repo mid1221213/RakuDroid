@@ -165,7 +165,6 @@ $(RAKUDO).touch:
 	rm -rf $(RAKUDO)
 	git clone https://github.com/rakudo/rakudo.git $(RAKUDO)
 	cd $(RAKUDO) && \
-		git am ../src/librakudroid/0001-PrecompilationRepository.pm6-flush-stdout-after-say.patch && \
 		git submodule sync --quiet && git submodule --quiet update --init && \
 		MAKEFLAGS="-j" perl Configure.pl --gen-nqp --gen-moar --backends=moar --make-install --relocatable
 	touch $(RAKUDO).touch
