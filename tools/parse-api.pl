@@ -23,15 +23,15 @@ sub mkdirs
 }
 
 our %P62JNI = (
-    'void'  => 'V',
-    'bool'  => 'Z',
-    'uint8' => 'B',
-    'int8'  => 'C',
-    'int16' => 'S',
-    'int'   => 'I',
-    'int64' => 'J',
-    'num32' => 'F',
-    'num64' => 'D',
+    'void'   => 'V',
+    'bool'   => 'Z',
+    'int8'   => 'B',
+    'uint16' => 'C',
+    'int16'  => 'S',
+    'int32'  => 'I',
+    'int64'  => 'J',
+    'num32'  => 'F',
+    'num64'  => 'D',
 );
 
 our %JNI2P6 = map { $P62JNI{$_} => $_ } keys %P62JNI;

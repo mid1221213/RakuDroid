@@ -1,56 +1,56 @@
 use NativeCall :types;
 
-class RakuDroidJValueUnion is repr('CUnion')
-{
-    has Str     $.str;
-    has uint8   $.bool;
-    has uint8   $.uint8;
-    has int8    $.int8;
-    has int16   $.int16;
-    has int64   $.int;
-    has int64   $.int64;
-    has num32   $.num32;
-    has num64   $.num64;
-    has Pointer $.pointer;
-
-    submethod BUILD(:$type, :$val) {
-	given $type {
-	    when 's' { $!str     := $val.Str }
-	    when 'Z' { $!bool     = $val.Int }
-	    when 'B' { $!uint8    = $val.Int }
-	    when 'C' { $!int8     = $val.Int }
-	    when 'S' { $!int16    = $val.Int }
-	    when 'I' { $!int      = $val.Int }
-	    when 'J' { $!int64    = $val.Int }
-	    when 'F' { $!num32    = $val.Num }
-	    when 'D' { $!num64    = $val.Num }
-	    default  { $!pointer := Pointer.new($val.Int) }
-	}
-    }
-}
-
 class RakuDroidJValue is repr('CStruct')
 {
+    class JUnion is repr('CUnion')
+    {
+	has Str     $.str;
+	has uint8   $.bool;
+	has int8    $.byte;
+	has uint16  $.char;
+	has int16   $.short;
+	has int32   $.int;
+	has int64   $.long;
+	has num32   $.float;
+	has num64   $.double;
+	has Pointer $.object;
+
+	submethod BUILD(:$type, :$val) {
+	    given $type {
+		when 's' { $!str    := $val.Str }
+		when 'Z' { $!bool    = $val.Int }
+		when 'B' { $!byte    = $val.Int }
+		when 'C' { $!char    = $val.Int }
+		when 'S' { $!short   = $val.Int }
+		when 'I' { $!int     = $val.Int }
+		when 'J' { $!long    = $val.Int }
+		when 'F' { $!float   = $val.Num }
+		when 'D' { $!double  = $val.Num }
+		default  { $!object := Pointer.new($val.Int) }
+	    }
+	}
+    }
+
     has uint8 $.type;
-    has RakuDroidJValueUnion $!val;
+    has JUnion $!val;
 
     submethod BUILD(Str :$type, :$val) {
 	$!type = $type.ord;
-	$!val := RakuDroidJValueUnion.new(:type($type), :val($val));
+	$!val := JUnion.new(:type($type), :val($val));
     }
 
     method gist() {
 	given $!type {
 	    when 's'.ord { $!val.str.Str     }
 	    when 'Z'.ord { $!val.bool.so.Str }
-	    when 'B'.ord { my uint8 $val = $!val.uint8; $val.Str }
-	    when 'C'.ord { $!val.int8.Str    }
-	    when 'S'.ord { $!val.int16.Str   }
+	    when 'B'.ord { $!val.byte.Str    }
+	    when 'C'.ord { my uint16 $val = $!val.char; $val.Str }
+	    when 'S'.ord { $!val.short.Str   }
 	    when 'I'.ord { $!val.int.Str     }
-	    when 'J'.ord { $!val.int64.Str   }
-	    when 'F'.ord { $!val.num32.Str   }
-	    when 'D'.ord { $!val.num64.Str   }
-	    default  { 'Pointer.new(0x' ~ $!val.pointer.Int.base(16) ~ ')' }
+	    when 'J'.ord { $!val.long.Str    }
+	    when 'F'.ord { $!val.float.Str   }
+	    when 'D'.ord { $!val.double.Str  }
+	    default  { 'Pointer.new(0x' ~ $!val.object.Int.base(16) ~ ')' }
 	}
     }
 
@@ -60,31 +60,31 @@ class RakuDroidJValue is repr('CStruct')
 	given $!type {
 	    when 's'.ord { $!val.str.Int     }
 	    when 'Z'.ord { $!val.bool.so.Int }
-	    when 'B'.ord { my uint8 $val = $!val.uint8; $val.Int }
-	    when 'C'.ord { $!val.int8.Int    }
-	    when 'S'.ord { $!val.int16.Int   }
+	    when 'B'.ord { $!val.byte.Int    }
+	    when 'C'.ord { my uint16 $val = $!val.char; $val.Int }
+	    when 'S'.ord { $!val.short.Int   }
 	    when 'I'.ord { $!val.int.Int     }
-	    when 'J'.ord { $!val.int64.Int   }
-	    when 'F'.ord { $!val.num32.Int   }
-	    when 'D'.ord { $!val.num64.Int   }
-	    default  { $!val.pointer.Int }
+	    when 'J'.ord { $!val.long.Int    }
+	    when 'F'.ord { $!val.float.Int   }
+	    when 'D'.ord { $!val.double.Int  }
+	    default  { $!val.object.Int }
 	}
     }
+
+    method so() { self.Int.so }
 
     method Num() {
 	given $!type {
 	    when 's'.ord { $!val.str.Num     }
 	    when 'Z'.ord { $!val.bool.so.Num }
-	    when 'B'.ord { my uint8 $val = $!val.uint8; $val.Num }
-	    when 'C'.ord { $!val.int8.Num    }
-	    when 'S'.ord { $!val.int16.Num   }
+	    when 'B'.ord { $!val.byte.Num    }
+	    when 'C'.ord { my uint16 $val = $!val.char; $val.Num }
+	    when 'S'.ord { $!val.short.Num   }
 	    when 'I'.ord { $!val.int.Num     }
-	    when 'J'.ord { $!val.int64.Num   }
-	    when 'F'.ord { $!val.num32.Num   }
-	    when 'D'.ord { $!val.num64.Num   }
-	    default  { $!val.pointer.Num }
+	    when 'J'.ord { $!val.long.Num    }
+	    when 'F'.ord { $!val.float.Num   }
+	    when 'D'.ord { $!val.double.Num  }
+	    default  { $!val.object.Num }
 	}
     }
-
-    method so() { self.Int.so }
 }
