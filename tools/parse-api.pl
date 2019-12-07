@@ -276,9 +276,12 @@ foreach my $class (keys %classes) {
     open(OUTROLE, '>', "gen/$role_path.pm6") or die $!;
     say OUTROLE "# GENERATED, don't edit or you'll loose!
 
-unit role $role;";
+unit role $role;
+";
 
-    say OUTROLE "also does RakuDroidRole::java::lang::Object;" unless $role eq 'RakuDroidRole::java::lang::Object';
+    say OUTROLE "use RakuDroidRole::java::lang::Object;
+also does RakuDroidRole::java::lang::Object;
+" unless $role eq 'RakuDroidRole::java::lang::Object';
     open(OUT, '>', "gen/$path.pm6") or die $!;
     say OUT "# GENERATED, don't edit or you'll loose!
 
@@ -301,6 +304,13 @@ use $role;
     say OUT "
 unit $classes{$class}{type} $n_class$is_str does $role;
 ";
+
+    say OUTROLE "
+multi method new(Str $str)
+{
+    self.bless(:value($str))
+}
+" if $n_class eq 'RakuDroid::java::lang::String';
 
     if (defined($classes{$class}{extends})) {
 	my $extendsp6 = objjni2objp6($classes{$class}{extends});

@@ -1,4 +1,4 @@
-From 167e8a3438e8cb758eb5784bbd08c98ef4a218b0 Mon Sep 17 00:00:00 2001
+From 19612ef9586acf9ba634601cc603ece73056165a Mon Sep 17 00:00:00 2001
 From: Alexandre Jousset <mid@gtmp.org>
 Date: Sun, 27 Oct 2019 00:13:27 +0200
 Subject: [PATCH] Make MoarVM cross-compile nicely for Android
@@ -9,14 +9,14 @@ See https://github.com/mid1221213/RakuDroid
  Configure.pl      | 26 +++++++++++---------
  build/Makefile.in |  3 +++
  build/probe.pm    | 41 +++++++++++++++++++++----------
- build/setup.pm    | 61 +++++++++++++++++++++++++++++++++++++++++++----
- 4 files changed, 103 insertions(+), 28 deletions(-)
+ build/setup.pm    | 62 ++++++++++++++++++++++++++++++++++++++++++++---
+ 4 files changed, 104 insertions(+), 28 deletions(-)
 
 diff --git a/Configure.pl b/Configure.pl
-index 22c83ac2c..3a27bf17c 100755
+index 69351ff52..9064a9288 100755
 --- a/Configure.pl
 +++ b/Configure.pl
-@@ -479,7 +479,7 @@ $config{auxclean} = @auxfiles ? '$(RM) ' . join ' ', @auxfiles : '@:';
+@@ -491,7 +491,7 @@ $config{auxclean} = @auxfiles ? '$(RM) ' . join ' ', @auxfiles : '@:';
  
  print "OK\n\n";
  
@@ -25,7 +25,7 @@ index 22c83ac2c..3a27bf17c 100755
      build::auto::detect_cross(\%config, \%defaults);
      build::probe::static_inline_cross(\%config, \%defaults);
      build::probe::unaligned_access_cross(\%config, \%defaults);
-@@ -751,18 +751,22 @@ sub setup_cross {
+@@ -763,18 +763,22 @@ sub setup_cross {
      hardfail("both --build and --host need to be specified")
          unless defined $build && defined $host;
  
@@ -54,7 +54,7 @@ index 22c83ac2c..3a27bf17c 100755
          }
          else { hardfail("failed to parse triple '$$_'") }
      }
-@@ -773,14 +777,14 @@ sub setup_cross {
+@@ -785,14 +789,14 @@ sub setup_cross {
      $host  = $::SYSTEMS{$host};
  
      my $shell     = $::SHELLS{ $build->[0] };
@@ -74,10 +74,10 @@ index 22c83ac2c..3a27bf17c 100755
      $defaults{be}        = $args{'big-endian'};
  }
 diff --git a/build/Makefile.in b/build/Makefile.in
-index 1cab3a5e3..7ff66c8d1 100644
+index dbc2e4e23..f44bed175 100644
 --- a/build/Makefile.in
 +++ b/build/Makefile.in
-@@ -457,6 +457,9 @@ UV_LINUX = 3rdparty/libuv/src/unix/linux-core@obj@ \
+@@ -467,6 +467,9 @@ UV_LINUX = 3rdparty/libuv/src/unix/linux-core@obj@ \
             3rdparty/libuv/src/unix/proctitle@obj@ \
             $(UV_UNIX)
  
@@ -205,10 +205,10 @@ index 28847127b..47219bbc8 100644
      print $can_rdtscp ? "YES\n": "NO\n";
      $config->{canrdtscp} = $can_rdtscp || 0
 diff --git a/build/setup.pm b/build/setup.pm
-index d972f56e9..4a23b2bed 100644
+index 49ca983b9..cbdbd4f54 100644
 --- a/build/setup.pm
 +++ b/build/setup.pm
-@@ -179,6 +179,14 @@ TERM
+@@ -180,6 +180,14 @@ TERM
      dlllocal  => '__attribute__ ((visibility ("hidden")))',
  );
  
@@ -223,7 +223,7 @@ index d972f56e9..4a23b2bed 100644
  our %TC_BSD = (
      %TC_POSIX,
  
-@@ -264,10 +272,11 @@ TERM
+@@ -266,10 +274,11 @@ TERM
  );
  
  our %TOOLCHAINS = (
@@ -239,7 +239,7 @@ index d972f56e9..4a23b2bed 100644
  );
  
  # compiler configuration
-@@ -359,6 +368,39 @@ our %COMPILERS = (
+@@ -364,6 +373,40 @@ our %COMPILERS = (
          expect_condition => '__builtin_expect((condition), (expection))'
      },
  
@@ -269,6 +269,7 @@ index d972f56e9..4a23b2bed 100644
 +
 +        noreturnspecifier => '',
 +        noreturnattribute => '__attribute__((noreturn))',
++        fallthrough => '',
 +        formatattribute   => '__attribute__((format(X, Y, Z)))',
 +        vectorizerspecifier => '_Pragma ("clang loop vectorize(enable)")',
 +        expect_likely => '__builtin_expect(!!(condition), 1)',
@@ -279,7 +280,7 @@ index d972f56e9..4a23b2bed 100644
      cl => {
          -toolchain => 'msvc',
  
-@@ -502,6 +544,16 @@ our %OS_LINUX = (
+@@ -509,6 +552,16 @@ our %OS_LINUX = (
      },
  );
  
@@ -296,7 +297,7 @@ index d972f56e9..4a23b2bed 100644
  our %OS_OPENBSD = (
      %OS_POSIX,
  
-@@ -590,6 +642,7 @@ our %OS_DARWIN = (
+@@ -597,6 +650,7 @@ our %OS_DARWIN = (
  our %SYSTEMS = (
      posix       => [ qw( posix posix cc ),    { %OS_POSIX } ],
      linux       => [ qw( posix gnu   gcc ),   { %OS_LINUX } ],

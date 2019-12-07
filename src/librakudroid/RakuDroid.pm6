@@ -28,25 +28,25 @@ method field-get($name, $type)
 
 sub process-args(@args --> Array[RakuDroidJValue])
 {
-    my RakuDroidJValue @a;
+    my RakuDroidJValue::JUnion @a;
 
     for Backtrace.new[4].code.signature.params -> $p {
 	my $ret = @args.shift;
 	given $p.type {
-	    when Str    { @a.push(RakuDroidJValue.new(:type<s>, :val($ret))) }
-	    when bool   { @a.push(RakuDroidJValue.new(:type<Z>, :val($ret))) }
-	    when int8   { @a.push(RakuDroidJValue.new(:type<B>, :val($ret))) }
-	    when uint16 { @a.push(RakuDroidJValue.new(:type<C>, :val($ret))) }
-	    when int16  { @a.push(RakuDroidJValue.new(:type<S>, :val($ret))) }
-	    when int32  { @a.push(RakuDroidJValue.new(:type<I>, :val($ret))) }
-	    when int64  { @a.push(RakuDroidJValue.new(:type<J>, :val($ret))) }
-	    when num32  { @a.push(RakuDroidJValue.new(:type<F>, :val($ret))) }
-	    when num64  { @a.push(RakuDroidJValue.new(:type<D>, :val($ret))) }
+	    when Str    { @a.push(RakuDroidJValue.new(:type<s>, :val($ret)).val) }
+	    when bool   { @a.push(RakuDroidJValue.new(:type<Z>, :val($ret)).val) }
+	    when int8   { @a.push(RakuDroidJValue.new(:type<B>, :val($ret)).val) }
+	    when uint16 { @a.push(RakuDroidJValue.new(:type<C>, :val($ret)).val) }
+	    when int16  { @a.push(RakuDroidJValue.new(:type<S>, :val($ret)).val) }
+	    when int32  { @a.push(RakuDroidJValue.new(:type<I>, :val($ret)).val) }
+	    when int64  { @a.push(RakuDroidJValue.new(:type<J>, :val($ret)).val) }
+	    when num32  { @a.push(RakuDroidJValue.new(:type<F>, :val($ret)).val) }
+	    when num64  { @a.push(RakuDroidJValue.new(:type<D>, :val($ret)).val) }
 	    default     {
 		if $ret ~~ Str {
-		    @a.push(RakuDroidJValue.new(:type<s>, :val($ret)));
+		    @a.push(RakuDroidJValue.new(:type<s>, :val($ret)).val);
 		} else {
-		    @a.push(RakuDroidJValue.new(:type<;>, :val($ret.j-obj)));
+		    @a.push(RakuDroidJValue.new(:type<;>, :val($ret.j-obj)).val);
 		}
 	    }
 	}

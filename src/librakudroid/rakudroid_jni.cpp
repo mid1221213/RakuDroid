@@ -15,24 +15,48 @@ extern "C" void jni_init_env(JNIEnv *envParam)
     env = envParam;
 }
 
-extern "C" void *jni_method_invoke(char *class_name, void *obj, char *name, char *sig, void *args[], char ret_type,
-				   uint8_t *Z,
-				   uint8_t *B,
-				   int8_t  *C,
-				   int16_t *S,
-				   int     *I,
-				   int64_t *J,
-				   float   *F,
-				   double  *D
-    )
+extern "C" char *jni_ctor_invoke(char *class_name, char *sig, jvalue jargs[], rakujvalue_t *ret)
 {
     jclass clazz = env->FindClass(class_name);
     if (env->ExceptionOccurred()) {
-        printf("jni_static_method_invoke(): FindClass raised exception!\n");
+        printf("jni_ctor_invoke(): FindClass raised exception!\n");
         env->ExceptionDescribe();
         env->ExceptionClear();
 
-        return nullptr;
+        return strdup("jni_ctor_invoke(): FindClass raised exception!");
+    }
+
+    jmethodID mID = env->GetMethodID(clazz, "<init>", sig);
+    if (env->ExceptionOccurred()) {
+        printf("jni_ctor_invoke(): GetMethodID raised exception!\n");
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+
+        return strdup("jni_ctor_invoke(): GetMethodID raised exception!");
+    }
+
+    ret->val->L = static_cast<void *>(env->NewObjectA(clazz, mID, jargs));
+
+    if (env->ExceptionOccurred()) {
+        printf("jni_ctor_invoke(): NewObjectA raised exception!\n");
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+
+        return strdup("jni_ctor_invoke(): NewObjectA raised exception!");
+    }
+
+    return strdup("OK");
+}
+
+extern "C" char *jni_method_invoke(char *class_name, jobject obj, char *name, char *sig, jvalue jargs[], char ret_type, rakujvalue_t *ret)
+{
+    jclass clazz = env->FindClass(class_name);
+    if (env->ExceptionOccurred()) {
+        printf("jni_method_invoke(): FindClass raised exception!\n");
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+
+        return strdup("jni_method_invoke(): FindClass raised exception!");
     }
 
     jmethodID mID = env->GetMethodID(clazz, name, sig);
@@ -41,43 +65,31 @@ extern "C" void *jni_method_invoke(char *class_name, void *obj, char *name, char
         env->ExceptionDescribe();
         env->ExceptionClear();
 
-        return nullptr;
+        return strdup("jni_method_invoke(): GetMethodID raised exception!");
     }
-
-    void *ret;
-    jvalue *jargs = reinterpret_cast<jvalue *>(args);
 
     switch(ret_type) {
     case ';':
-        ret = static_cast<void *>(env->CallObjectMethodA(reinterpret_cast<jobject>(obj), mID, jargs));
+        ret->val->L = static_cast<void *>(env->CallObjectMethodA(obj, mID, jargs));
         break;
     default:
-        printf("jni_static_method_invoke(): don't know what to call (yet) for '%s'!\n", sig);
-        return nullptr;
+        printf("jni_method_invoke(): don't know what to call (yet) for '%s'!\n", sig);
+        return strdup("jni_method_invoke(): don't know what to call (yet) for '%s'!");
         break;
     }
 
     if (env->ExceptionOccurred()) {
-        printf("jni_static_method_invoke(): GetStaticMethodID raised exception!\n");
+        printf("jni_method_invoke(): CallObjectMethodA raised exception!\n");
         env->ExceptionDescribe();
         env->ExceptionClear();
 
-        return nullptr;
+        return strdup("jni_method_invoke(): CallObjectMethodA raised exception!");
     }
 
-    return ret;
+    return strdup("OK");
 }
 
-extern "C" void *jni_static_method_invoke(char *class_name, char *name, char *sig, void *args[], char ret_type,
-					  uint8_t *Z,
-					  uint8_t *B,
-					  int8_t  *C,
-					  int16_t *S,
-					  int     *I,
-					  int64_t *J,
-					  float   *F,
-					  double  *D
-    )
+extern "C" char *jni_static_method_invoke(char *class_name, char *name, char *sig, jvalue jargs[], char ret_type, rakujvalue_t *ret)
 {
     jclass clazz = env->FindClass(class_name);
     if (env->ExceptionOccurred()) {
@@ -85,7 +97,7 @@ extern "C" void *jni_static_method_invoke(char *class_name, char *name, char *si
         env->ExceptionDescribe();
         env->ExceptionClear();
 
-        return nullptr;
+        return strdup("jni_static_method_invoke(): FindClass raised exception!\n");
     }
 
     jmethodID mID = env->GetStaticMethodID(clazz, name, sig);
@@ -94,19 +106,16 @@ extern "C" void *jni_static_method_invoke(char *class_name, char *name, char *si
         env->ExceptionDescribe();
         env->ExceptionClear();
 
-        return nullptr;
+        return strdup("jni_static_method_invoke(): GetStaticMethodID raised exception!");
     }
-
-    void *ret;
-    jvalue *jargs = reinterpret_cast<jvalue *>(args);
 
     switch(ret_type) {
     case ';':
-        ret = static_cast<void *>(env->CallStaticObjectMethodA(clazz, mID, jargs));
+        ret->val->L = static_cast<void *>(env->CallStaticObjectMethodA(clazz, mID, jargs));
         break;
     default:
         printf("jni_static_method_invoke(): don't know what to call (yet) for '%s'!\n", sig);
-        return nullptr;
+        return strdup("jni_static_method_invoke(): don't know what to call (yet) for '%s'!");
         break;
     }
 
@@ -115,8 +124,8 @@ extern "C" void *jni_static_method_invoke(char *class_name, char *name, char *si
         env->ExceptionDescribe();
         env->ExceptionClear();
 
-        return nullptr;
+        return strdup("jni_static_method_invoke(): GetStaticMethodID raised exception!");
     }
 
-    return ret;
+    return strdup("OK");
 }

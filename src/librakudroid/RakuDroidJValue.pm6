@@ -32,7 +32,7 @@ class RakuDroidJValue is repr('CStruct')
     }
 
     has uint8 $.type;
-    has JUnion $!val;
+    has JUnion $.val;
 
     submethod BUILD(Str :$type, :$val) {
 	$!type = $type.ord;
