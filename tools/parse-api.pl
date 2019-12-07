@@ -306,9 +306,9 @@ unit $classes{$class}{type} $n_class$is_str does $role;
 ";
 
     say OUTROLE "
-multi method new(Str $str)
+multi method new(Str \$str)
 {
-    self.bless(:value($str))
+    self.bless(:value(\$str))
 }
 " if $n_class eq 'RakuDroid::java::lang::String';
 
