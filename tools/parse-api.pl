@@ -81,13 +81,13 @@ sub sigjni2sigp6
 {
     my $sig = shift;
 
-    my (@objs, @sigobjs, $arr_level, $ret_obj, $seen_paren, $seen_ret);
+    my (@objs, @sigobjs, @sigobjs_coercion, $arr_level, $ret_obj, $seen_paren, $seen_ret);
     $arr_level = $seen_paren = $seen_ret = 0;
 
     push @objs, $1 while $sig =~ s/(L[^;]+;)/O/o;
 
     foreach my $c (split('', $sig)) {
-	my $obj6;
+	my ($obj6, $obj6_coercion) = ("") x 2;
 	$seen_ret++ if $ret_obj;
 	if ($c eq 'O') {
 	    $obj6 = objjni2objp6(shift @objs);
@@ -103,21 +103,30 @@ sub sigjni2sigp6
 	    next;
 	} else {
 	    $obj6 = $JNI2P6{$c};
+	    if (!$arr_level && $c =~ /^[BCSIJ]$/) {
+		$obj6_coercion = "$obj6(Int)";
+	    }
 	}
 
 	$obj6 = ('Array[' x $arr_level) . $obj6 . (']' x $arr_level);
 	$arr_level = 0;
 	push @sigobjs, $obj6;
+	if ($obj6_coercion) {
+	    push @sigobjs_coercion, $obj6_coercion;
+	} else {
+	    push @sigobjs_coercion, $obj6;
+	}
     }
 
     if ($seen_ret || !$seen_paren) {
 	$ret_obj = pop(@sigobjs);
+	pop(@sigobjs_coercion);
     } else {
 	$ret_obj = '';
     }
 
     my $argnb = 1;
-    return (join(', ', map { "$_ \$arg" . $argnb++ } @sigobjs), $ret_obj, 0+@sigobjs);
+    return (join(', ', map { "$_ \$arg" . $argnb++ } @sigobjs_coercion), join(', ', @sigobjs), $ret_obj, 0+@sigobjs);
 }
 
 my $item_h;
@@ -279,9 +288,9 @@ foreach my $class (keys %classes) {
 unit role $role;
 ";
 
-    say OUTROLE "use RakuDroidRole::java::lang::Object;
-also does RakuDroidRole::java::lang::Object;
-" unless $role eq 'RakuDroidRole::java::lang::Object';
+#    say OUTROLE "use RakuDroidRole::java::lang::Object;
+#also does RakuDroidRole::java::lang::Object;
+#" unless $role eq 'RakuDroidRole::java::lang::Object';
     open(OUT, '>', "gen/$path.pm6") or die $!;
     say OUT "# GENERATED, don't edit or you'll loose!
 
@@ -339,7 +348,7 @@ has Pointer \$.j-obj is rw;
 	foreach my $method_h (@{$classes{$class}{methods}{$method}}) {
 	    my @sig_uses = sigjni2uses($method_h->{sig});
 	    next unless @sig_uses == 0 || @sig_uses == grep { exists($classes{objp62cljni($_)}) } @sig_uses;
-	    my ($args, $ret, $nbargs) = sigjni2sigp6($method_h->{sig});
+	    my ($args, $args_s, $ret, $nbargs) = sigjni2sigp6($method_h->{sig});
 	    my $sigp6 = $args;
 	    $sigp6 .= " --> $ret" if $ret && $ret ne 'void';
 	    $sigp6 =~ s/^\s+//;
@@ -347,19 +356,19 @@ has Pointer \$.j-obj is rw;
 	    if ($method_h->{name} eq 'new') {
 		say OUT "${multi}method $method_h->{name}($sigp6)
 {
-    return \$rd.ctor-invoke(self, '$method_h->{sig}'" . join('', map { ", \$arg$_" } 1..$nbargs) . ");
+    return \$rd.ctor-invoke(self, '$method_h->{sig}', :($args_s)" . join('', map { ", \$arg$_" } 1..$nbargs) . ");
 }
 ";
 	    } elsif (defined($method_h->{static})) {
 		say OUT "${multi}sub $method_h->{name}($sigp6)
 {
-    return \$rd.static-method-invoke('$method_h->{name}', '$method_h->{sig}'" . join('', map { ", \$arg$_" } 1..$nbargs) . ");
+    return \$rd.static-method-invoke('$method_h->{name}', '$method_h->{sig}', :($args_s)" . join('', map { ", \$arg$_" } 1..$nbargs) . ");
 }
 ";
 	    } else {
 	    say OUT "${multi}method $method_h->{name}($sigp6)
 {
-    return \$rd.method-invoke(self, '$method_h->{name}', '$method_h->{sig}'" . join('', map { ", \$arg$_" } 1..$nbargs) . ");
+    return \$rd.method-invoke(self, '$method_h->{name}', '$method_h->{sig}', :($args_s)" . join('', map { ", \$arg$_" } 1..$nbargs) . ");
 }
 "
 	    };
@@ -369,7 +378,7 @@ has Pointer \$.j-obj is rw;
     foreach my $field_h (values %{$classes{$class}{fields}}) {
 	next unless grep { exists($classes{objp62cljni($_)}) } sigjni2uses($field_h->{sig});
 	$field_h->{name} =~ s/\$/__/g;
-	my ($args, $ret, $nbargs) = sigjni2sigp6($field_h->{sig});
+#	my ($args, $ret, $nbargs) = sigjni2sigp6($field_h->{sig});
 	say OUT "has \$.$field_h->{name};
 method $field_h->{name}() is rw {
     my bool \$cached = False;

@@ -10,6 +10,16 @@ use RakuDroidRole::java::lang::String;
 augment class Str {
     also does RakuDroidRole::java::lang::String;
 }
+augment class Int {
+    method int8()   { my int8   $x = self; $x }
+    method uint8()  { my uint8  $x = self; $x }
+    method int16()  { my int16  $x = self; $x }
+    method uint16() { my uint16 $x = self; $x }
+    method int32()  { my int32  $x = self; $x }
+    method uint32() { my uint32 $x = self; $x }
+    method int64()  { my int64  $x = self; $x }
+    method uint64() { my uint64 $x = self; $x }
+}
 
 sub rakudo_p6_init(& (Str --> Str), & (Pointer --> Str)) is native('rakudroid') { * }
 sub rakudo_p6_set_ok(int64) is native('rakudroid') { * }
@@ -60,24 +70,18 @@ sub helper_init_activity(Pointer $ptr --> Str)
 
 rakudo_p6_init(&helper_eval, &helper_init_activity);
 
-sub common-invoke-pre(Str $sig --> Str)
+sub common-invoke-pre(Str $sig)
 {
-    return ('V', RakuDroidJValue.new(:type<V>)) unless $sig.chars;
+    return ('V', RakuDroidJValue.new(:type<V>, :val(0))) unless $sig.chars;
 
-    my $ret-type = substr($sig, *);
-    my RakuDroidJValue $ret;
+    my $ret-type = substr($sig, *-1);
+    my $ret;
 
     if $ret-type eq ';' {
-	$ret-type = $sig;
-	$ret-type ~~ s/L (<-[\;]>+) \; $ /$0/;
+	my $real-ret-type = $sig;
+	$real-ret-type ~~ s/L (<-[\;]>+) \; $ /$0/;
 
-	return 's' if $ret-type eq 'java/lang/String'; # special Str case
-
-	$ret-type ~~ s:g/\//::/;
-	$ret-type ~~ s:g/\$/__/;
-	$ret-type ~~ s/^/RakuDroid::/;
-
-	return $ret-type;
+	return (';', RakuDroidJValue.new(:type<s>, :val(''))) if $real-ret-type eq 'java/lang/String'; # special Str case
 
 	$ret = RakuDroidJValue.new(:type<L>, :val(0));
     } elsif $ret-type eq 's' {
@@ -150,12 +154,12 @@ our sub method-invoke($rd, $obj, $name, $sig, @args)
 our sub static-method-invoke($rd, $name, $sig, @args)
 {
     my $c-args := CArray[RakuDroidJValue::JUnion].new(@args);
-    $c-args[@args.elems] = 0;
+    $c-args[@args.elems] = RakuDroidJValue::JUnion.new(:type<;>, :val(0));;
 
     my ($ret-type, $ret) = common-invoke-pre($sig);
 
     my $err = static_method_invoke($rd.class-name, $name, $sig, $c-args, $ret-type, $ret);
-    die $err if $err;
+#    die $err if $err;
 
     return common-invoke-post($ret-type, $ret);
 }

@@ -7,6 +7,24 @@ use RakuDroidJValue;
 my %classes;
 has Str $.class-name;
 
+##########################################
+# use MONKEY-TYPING;
+# use RakuDroidRole::java::lang::String;
+# augment class Str {
+#     also does RakuDroidRole::java::lang::String;
+# }
+# augment class Int {
+#     method int8()   { my int8   $x = self; $x }
+#     method uint8()  { my uint8  $x = self; $x }
+#     method int16()  { my int16  $x = self; $x }
+#     method uint16() { my uint16 $x = self; $x }
+#     method int32()  { my int32  $x = self; $x }
+#     method uint32() { my uint32 $x = self; $x }
+#     method int64()  { my int64  $x = self; $x }
+#     method uint64() { my uint64 $x = self; $x }
+# }
+##########################################
+
 method new-obj()
 {
     return $!class-name; # TBD
@@ -26,12 +44,14 @@ method field-get($name, $type)
 #    return field_get($name, $type);
 }
 
-sub process-args(@args --> Array[RakuDroidJValue])
+sub process-args(Signature $s, @args --> Array[RakuDroidJValue::JUnion])
 {
     my RakuDroidJValue::JUnion @a;
 
-    for Backtrace.new[4].code.signature.params -> $p {
+    for $s.params -> $p {
 	my $ret = @args.shift;
+	$p.type.note;
+	$*ERR.flush;
 	given $p.type {
 	    when Str    { @a.push(RakuDroidJValue.new(:type<s>, :val($ret)).val) }
 	    when bool   { @a.push(RakuDroidJValue.new(:type<Z>, :val($ret)).val) }
@@ -55,17 +75,17 @@ sub process-args(@args --> Array[RakuDroidJValue])
     return @a;
 }
 
-method ctor-invoke(Str $sig, *@args)
+method ctor-invoke(Str $sig, Signature $p6sig, *@args)
 {
-    return RakuDroidHelper::ctor-invoke(self, $sig, process-args(@args));
+    return RakuDroidHelper::ctor-invoke(self, $sig, process-args($p6sig, @args));
 }
 
-method method-invoke($obj, Str $name, Str $sig, *@args)
+method method-invoke($obj, Str $name, Str $sig, Signature $p6sig, *@args)
 {
-    return RakuDroidHelper::method-invoke(self, $obj, $name, $sig, process-args(@args));
+    return RakuDroidHelper::method-invoke(self, $obj, $name, $sig, process-args($p6sig, @args));
 }
 
-method static-method-invoke(Str $name, Str $sig, *@args)
+method static-method-invoke(Str $name, Str $sig, Signature $p6sig, *@args)
 {
-    return RakuDroidHelper::static-method-invoke(self, $name, $sig, process-args(@args));
+    return RakuDroidHelper::static-method-invoke(self, $name, $sig, process-args($p6sig, @args));
 }

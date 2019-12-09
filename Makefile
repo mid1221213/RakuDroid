@@ -59,7 +59,7 @@ P6_OPS_LIBS     = -lmoar -lm -ldl
 
 DROID_PREFIX    = app/src/main
 
-DROID_SRCS     = src/librakudroid/rakudroid.c src/librakudroid/rakudroid_jni.cpp
+DROID_SRCS      = src/librakudroid/rakudroid.c src/librakudroid/rakudroid_jni.cpp
 DROID_HDRS      = src/librakudroid/rakudroid.h src/librakudroid/rakudroid_jni.h
 
 DROID_SO_DIR    = $(DROID_PREFIX)/jniLibs/$(JNI_ARCH)
