@@ -60,7 +60,7 @@ jvalue *args2jargs(rakujvalue_t **args)
             jargs[i].l = (jobject) args[i]->val->L;
             break;
         }
-    };
+    }
 
     return jargs;
 }
