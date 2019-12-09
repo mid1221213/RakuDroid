@@ -72,16 +72,19 @@ rakudo_p6_init(&helper_eval, &helper_init_activity);
 
 sub common-invoke-pre(Str $sig)
 {
-    return ('V', RakuDroidJValue.new(:type<V>, :val(0))) unless $sig.chars;
+    return ('V', RakuDroidJValue.new(:type<V>, :val(0)), 'void') unless $sig.chars;
 
+    my $real-ret-type = $sig;
     my $ret-type = substr($sig, *-1);
     my $ret;
 
     if $ret-type eq ';' {
-	my $real-ret-type = $sig;
-	$real-ret-type ~~ s/L (<-[\;]>+) \; $ /$0/;
+	$real-ret-type ~~ s/.* L (<-[\;]>+) \; $ /$0/;
+	$real-ret-type ~~ s:g/\//::/;
+	$real-ret-type ~~ s:g/\$/__/;
+	$real-ret-type ~~ s/^/RakuDroid::/;
 
-	return (';', RakuDroidJValue.new(:type<s>, :val(''))) if $real-ret-type eq 'java/lang/String'; # special Str case
+	return (';', RakuDroidJValue.new(:type<s>, :val('')), $real-ret-type) if $real-ret-type eq 'RakuDroid::java::lang::String'; # special Str case
 
 	$ret = RakuDroidJValue.new(:type<L>, :val(0));
     } elsif $ret-type eq 's' {
@@ -90,10 +93,10 @@ sub common-invoke-pre(Str $sig)
 	$ret = RakuDroidJValue.new(:type($ret-type), :val(0));
     }
 
-    return ($ret-type, $ret);
+    return ($ret-type, $ret, $real-ret-type);
 }
 
-sub common-invoke-post(Str $ret-type, RakuDroidJValue $ret)
+sub common-invoke-post(Str $ret-type, RakuDroidJValue $ret, Str $real-ret-type)
 {
     given $ret-type {
 	when 's' { return $ret.Str }
@@ -107,19 +110,19 @@ sub common-invoke-post(Str $ret-type, RakuDroidJValue $ret)
 	when 'D' { return $ret.Num }
 	when 'V' { return }                # special no-return-value case
 	default  {                         # objects
-	    if ::($ret-type) ~~ Failure {
-		require ::($ret-type);
+	    if ::($real-ret-type) ~~ Failure {
+		require ::($real-ret-type);
 	    }
 
-	    return ::($ret-type).bless(j-obj => $ret.val.object);
+	    return ::($real-ret-type).bless(j-obj => $ret.val.object);
 	}
     }
 }
 
 our sub ctor-invoke($rd, $sig, @args)
 {
-    my $c-args := CArray[RakuDroidJValue::JUnion].new(@args);
-    $c-args[@args.elems] = 0;
+    my $c-args := CArray[RakuDroidJValue].new(@args);
+    $c-args[@args.elems] = RakuDroidJValue.new(:type<;>, :val(0));;
 
     my $ret-type = $rd.class-name;
     $ret-type ~~ s:g/\//::/;
@@ -140,26 +143,26 @@ our sub ctor-invoke($rd, $sig, @args)
 
 our sub method-invoke($rd, $obj, $name, $sig, @args)
 {
-    my $c-args := CArray[RakuDroidJValue::JUnion].new(@args);
-    $c-args[@args.elems] = 0;
+    my $c-args := CArray[RakuDroidJValue].new(@args);
+    $c-args[@args.elems] = RakuDroidJValue.new(:type<;>, :val(0));;
 
-    my ($ret-type, $ret) = common-invoke-pre($sig);
+    my ($ret-type, $ret, $real-ret-type) = common-invoke-pre($sig);
 
     my $err = method_invoke($rd.class-name, $obj.j-obj, $name, $sig, $c-args, $ret-type, $ret);
     die $err if $err;
 
-    return common-invoke-post($ret-type, $ret);
+    return common-invoke-post($ret-type, $ret, $real-ret-type);
 }
 
 our sub static-method-invoke($rd, $name, $sig, @args)
 {
-    my $c-args := CArray[RakuDroidJValue::JUnion].new(@args);
-    $c-args[@args.elems] = RakuDroidJValue::JUnion.new(:type<;>, :val(0));;
+    my $c-args := CArray[RakuDroidJValue].new(@args);
+    $c-args[@args.elems] = RakuDroidJValue.new(:type<;>, :val(0));;
 
-    my ($ret-type, $ret) = common-invoke-pre($sig);
+    my ($ret-type, $ret, $real-ret-type) = common-invoke-pre($sig);
 
     my $err = static_method_invoke($rd.class-name, $name, $sig, $c-args, $ret-type, $ret);
 #    die $err if $err;
 
-    return common-invoke-post($ret-type, $ret);
+    return common-invoke-post($ret-type, $ret, $real-ret-type);
 }

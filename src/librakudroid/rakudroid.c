@@ -279,22 +279,22 @@ char *rakudo_init_activity(void *activity_ptr)
     return strdup(init_activity_p6(activity_ptr));
 }
 
-char *ctor_invoke(char *class_name, char *sig, jvalue jargs[], rakujvalue_t *ret)
+char *ctor_invoke(char *class_name, char *sig, rakujvalue_t **args, rakujvalue_t *ret)
 {
-    printf("ctor_invoke(class_name='%s', sig='%s', jargs='%p', ret=%p\n", class_name, sig, jargs, ret);
-    return jni_ctor_invoke(class_name, sig, jargs, ret);
+    printf("ctor_invoke(class_name='%s', sig='%s', args='%p', ret=%p\n", class_name, sig, args, ret);
+    return jni_ctor_invoke(class_name, sig, args, ret);
 }
 
-char *method_invoke(char *class_name, jobject obj, char *name, char *sig, jvalue jargs[], char *ret_type, rakujvalue_t *ret)
+char *method_invoke(char *class_name, jobject obj, char *name, char *sig, rakujvalue_t **args, char *ret_type, rakujvalue_t *ret)
 {
-    printf("method_invoke(class_name='%s', obj='%p', method='%s', sig='%s', jargs='%p', ret_type=%c, ret=%p\n", class_name, obj, name, sig, jargs, ret_type[0], ret);
-    return jni_method_invoke(class_name, obj, name, sig, jargs, ret_type[0], ret);
+    printf("method_invoke(class_name='%s', obj='%p', method='%s', sig='%s', args='%p', ret_type=%c, ret=%p\n", class_name, obj, name, sig, args, ret_type[0], ret);
+    return jni_method_invoke(class_name, obj, name, sig, args, ret_type[0], ret);
 }
 
-char *static_method_invoke(char *class_name, char *name, char *sig, jvalue jargs[], char *ret_type, rakujvalue_t *ret)
+char *static_method_invoke(char *class_name, char *name, char *sig, rakujvalue_t **args, char *ret_type, rakujvalue_t *ret)
 {
-    printf("static_method_invoke(class_name='%s', method='%s', sig='%s', jargs='%p', ret_type=%c, ret=%p\n", class_name, name, sig, jargs, ret_type[0], ret);
-    return jni_static_method_invoke(class_name, name, sig, jargs, ret_type[0], ret);
+    printf("static_method_invoke(class_name='%s', method='%s', sig='%s', args='%p', ret_type=%c, ret=%p\n", class_name, name, sig, args, ret_type[0], ret);
+    return jni_static_method_invoke(class_name, name, sig, args, ret_type[0], ret);
 }
 
 #define PRINT_EVAL(str) { char *ret = rakudo_eval(str); printf("« " str " » = %s%s\n", ok ? "" : "[NOK] → ", ret); free(ret); }
