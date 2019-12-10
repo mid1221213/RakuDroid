@@ -150,11 +150,11 @@ extern "C" char *jni_method_invoke(char *class_name, jobject obj, char *name, ch
     }
 
     if (env->ExceptionOccurred()) {
-        printf("jni_method_invoke(): CallObjectMethodA raised exception!\n");
+        printf("jni_method_invoke(): Call*MethodA raised exception!\n");
         env->ExceptionDescribe();
         env->ExceptionClear();
 
-        return strdup("jni_method_invoke(): CallObjectMethodA raised exception!");
+        return strdup("jni_method_invoke(): Call*MethodA raised exception!");
     }
 
     release_jargs(args, jargs);
@@ -198,14 +198,102 @@ extern "C" char *jni_static_method_invoke(char *class_name, char *name, char *si
     }
 
     if (env->ExceptionOccurred()) {
-        printf("jni_static_method_invoke(): GetStaticMethodID raised exception!\n");
+        printf("jni_static_method_invoke(): GetStatic*MethodA raised exception!\n");
         env->ExceptionDescribe();
         env->ExceptionClear();
 
-        return strdup("jni_static_method_invoke(): GetStaticMethodID raised exception!");
+        return strdup("jni_static_method_invoke(): GetStatic*MethodA raised exception!");
     }
 
     release_jargs(args, jargs);
+
+    return strdup("OK");
+}
+
+extern "C" char *jni_field_get(char *class_name, jobject obj, char *name, char *sig, char ret_type, rakujvalue_t *ret)
+{
+    jclass clazz = env->FindClass(class_name);
+    if (env->ExceptionOccurred()) {
+        printf("jni_field_get(): FindClass raised exception!\n");
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+
+        return strdup("jni_field_get(): FindClass raised exception!\n");
+    }
+
+    jfieldID fID = env->GetFieldID(clazz, name, sig);
+    if (env->ExceptionOccurred()) {
+        printf("jni_field_get(): GetFieldID raised exception!\n");
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+
+        return strdup("jni_field_get(): GetFieldID raised exception!");
+    }
+
+    switch(ret_type) {
+    case ';':
+        ret->val->L = static_cast<void *>(env->GetObjectField(obj, fID));
+        break;
+    case 'I':
+        ret->val->I = static_cast<int32_t>(env->GetIntField(obj, fID));
+        break;
+    default:
+        printf("jni_field_get(): don't know what to get (yet) for '%s'!\n", sig);
+        return strdup("jni_field_get(): don't know what to get (yet) for '%s'!");
+        break;
+    }
+
+    if (env->ExceptionOccurred()) {
+        printf("jni_field_get(): Get*Field raised exception!\n");
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+
+        return strdup("jni_field_get(): Get*Field raised exception!");
+    }
+
+    return strdup("OK");
+}
+
+extern "C" char *jni_static_field_get(char *class_name, char *name, char *sig, char ret_type, rakujvalue_t *ret)
+{
+    jclass clazz = env->FindClass(class_name);
+    if (env->ExceptionOccurred()) {
+        printf("jni_static_field_get(): FindClass raised exception!\n");
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+
+        return strdup("jni_static_field_get(): FindClass raised exception!\n");
+    }
+
+    jfieldID fID = env->GetStaticFieldID(clazz, name, sig);
+    if (env->ExceptionOccurred()) {
+        printf("jni_static_field_get(): GetStaticFieldID raised exception!\n");
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+
+        return strdup("jni_static_field_get(): GetStaticFieldID raised exception!");
+    }
+
+    switch(ret_type) {
+    case ';':
+        ret->val->L = static_cast<void *>(env->GetStaticObjectField(clazz, fID));
+        break;
+    case 'I':
+        ret->val->I = static_cast<int32_t>(env->GetStaticIntField(clazz, fID));
+        break;
+    default:
+        printf("jni_static_field_get(): don't know what to get (yet) for '%s'!\n", sig);
+        return strdup("jni_static_field_get(): don't know what to get (yet) for '%s'!");
+        break;
+    }
+
+    if (env->ExceptionOccurred()) {
+        printf("jni_static_field_get(): GetStatic*Field raised exception!\n");
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+
+        return strdup("jni_static_field_get(): GetStatic*Field raised exception!");
+    }
 
     return strdup("OK");
 }

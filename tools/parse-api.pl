@@ -341,7 +341,7 @@ my RakuDroid \$rd = RakuDroid.new(:class-name('$class'));
 has Pointer \$.j-obj is rw;
 ";
 
-    foreach my $method (keys %{$classes{$class}{methods}}) {
+    foreach my $method (sort keys %{$classes{$class}{methods}}) {
 	my $multi = @{$classes{$class}{methods}{$method}} > 1 ? 'multi ' : '';
 	say OUT "our proto $method(|) { * }" if $multi && defined($classes{$class}{methods}{$method}[0]{static});
 
@@ -375,25 +375,56 @@ has Pointer \$.j-obj is rw;
 	}
     }
 
-    foreach my $field_h (values %{$classes{$class}{fields}}) {
-	next unless grep { exists($classes{objp62cljni($_)}) } sigjni2uses($field_h->{sig});
+    foreach my $field_h (sort { $a->{name} cmp $b->{name} } values %{$classes{$class}{fields}}) {
+	my @sig_uses = sigjni2uses($field_h->{sig});
+	next unless @sig_uses == 0 || @sig_uses == grep { exists($classes{objp62cljni($_)}) } @sig_uses;
 	$field_h->{name} =~ s/\$/__/g;
-#	my ($args, $ret, $nbargs) = sigjni2sigp6($field_h->{sig});
-	say OUT "has \$.$field_h->{name};
-method $field_h->{name}() is rw {
-    my bool \$cached = False;
-    return Proxy.new:
-	FETCH => sub (\$) {
-	    \$!$field_h->{name} = \$rd.field-get('$field_h->{name}', '$field_h->{sig}') unless \$cached;
-	    \$cached = True;
-	    return \$!$field_h->{name};
-	},
-	STORE => sub (\$, \$$field_h->{name}) {
-	    \$cached = True;
-	    \$!$field_h->{name} = \$$field_h->{name};
-	}
+	my $static = $field_h->{static};
+	my $final = $field_h->{final};
+
+	if ($static) {
+	    say OUT "my \$$field_h->{name}-cache;
+my Bool \$$field_h->{name}-cached = False;
+our sub $field_h->{name}(\$new-val?)
+{
+    if \$new-val.defined {";
+	    if ($final) {
+		say OUT "	die 'cannot modify <$field_h->{name}>';";
+	    } else {
+		say OUT "	\$$field_h->{name}-cached = True;
+	\$$field_h->{name}-cache = \$new-val;
+	\$rd.field-set(self, '$field_h->{name}', '$field_h->{sig}', \$new-val);
+	return \$new-val;";
+	    }
+	    say OUT "    }
+
+    \$$field_h->{name}-cache = \$rd.static-field-get('$field_h->{name}', '$field_h->{sig}') unless \$$field_h->{name}-cached;
+    \$$field_h->{name}-cached = True;
+    return \$$field_h->{name}-cache;
 }
 ";
+	    } else {
+	    say OUT "has \$!$field_h->{name}-cache;
+has \$!$field_h->{name}-cached;
+method $field_h->{name}(\$new-val?)
+{
+    if \$new-val.defined {";
+	    if ($final) {
+		say OUT "	die 'cannot modify <$field_h->{name}>';";
+	    } else {
+		say OUT "	\$!$field_h->{name}-cached = True;
+	\$!$field_h->{name}-cache = \$new-val;
+	\$rd.field-set(self, '$field_h->{name}', '$field_h->{sig}', \$new-val);
+	return \$new-val;";
+	    }
+	    say OUT "    }
+
+    \$!$field_h->{name}-cache = \$rd.field-get(self, '$field_h->{name}', '$field_h->{sig}') unless \$!$field_h->{name}-cached;
+    \$!$field_h->{name}-cached = True;
+    return \$!$field_h->{name}-cache;
+}
+"
+	    };
     }
 
     close(OUTROLE);

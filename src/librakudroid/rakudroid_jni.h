@@ -26,5 +26,7 @@ typedef struct {
 extern char *jni_ctor_invoke(         char *class_name,                          char *sig, rakujvalue_t **args,                rakujvalue_t *ret);
 extern char *jni_method_invoke(       char *class_name, jobject obj, char *name, char *sig, rakujvalue_t **args, char ret_type, rakujvalue_t *ret);
 extern char *jni_static_method_invoke(char *class_name,              char *name, char *sig, rakujvalue_t **args, char ret_type, rakujvalue_t *ret);
+extern char *jni_field_get(           char *class_name, jobject obj, char *name, char *sig,                      char ret_type, rakujvalue_t *ret);
+extern char *jni_static_field_get(    char *class_name,              char *name, char *sig,                      char ret_type, rakujvalue_t *ret);
 
 #endif // _RAKUDROID_JNI_H_

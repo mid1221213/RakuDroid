@@ -27,6 +27,8 @@ sub rakudo_p6_set_ok(int64) is native('rakudroid') { * }
 sub ctor_invoke(         Str,               Str, CArray[RakuDroidJValue],      RakuDroidJValue is rw --> Str) is native('rakudroid') { * }
 sub method_invoke(       Str, Pointer, Str, Str, CArray[RakuDroidJValue], Str, RakuDroidJValue is rw --> Str) is native('rakudroid') { * }
 sub static_method_invoke(Str,          Str, Str, CArray[RakuDroidJValue], Str, RakuDroidJValue is rw --> Str) is native('rakudroid') { * }
+sub field_get(           Str, Pointer, Str, Str,                          Str, RakuDroidJValue is rw --> Str) is native('rakudroid') { * }
+sub static_field_get(    Str,          Str, Str,                          Str, RakuDroidJValue is rw --> Str) is native('rakudroid') { * }
 
 sub helper_eval(Str $code --> Str(Any))
 {
@@ -136,7 +138,7 @@ our sub ctor-invoke($rd, $sig, @args)
     my $ret = RakuDroidJValue.new(:type<L>, :val(0)).val;
 
     my $err = ctor_invoke($rd.class-name, $sig, $c-args, $ret);
-    die $err if $err;
+#    die $err if $err;
 
     return ::($ret-type).bless(j-obj => $ret.val.object);
 }
@@ -149,7 +151,7 @@ our sub method-invoke($rd, $obj, $name, $sig, @args)
     my ($ret-type, $ret, $real-ret-type) = common-invoke-pre($sig);
 
     my $err = method_invoke($rd.class-name, $obj.j-obj, $name, $sig, $c-args, $ret-type, $ret);
-    die $err if $err;
+#    die $err if $err;
 
     return common-invoke-post($ret-type, $ret, $real-ret-type);
 }
@@ -162,6 +164,26 @@ our sub static-method-invoke($rd, $name, $sig, @args)
     my ($ret-type, $ret, $real-ret-type) = common-invoke-pre($sig);
 
     my $err = static_method_invoke($rd.class-name, $name, $sig, $c-args, $ret-type, $ret);
+#    die $err if $err;
+
+    return common-invoke-post($ret-type, $ret, $real-ret-type);
+}
+
+our sub field-get($rd, $obj, $name, $sig)
+{
+    my ($ret-type, $ret, $real-ret-type) = common-invoke-pre($sig);
+
+    my $err = field_get($rd.class-name, $obj.j-obj, $name, $sig, $ret-type, $ret);
+#    die $err if $err;
+
+    return common-invoke-post($ret-type, $ret, $real-ret-type);
+}
+
+our sub static-field-get($rd, $name, $sig)
+{
+    my ($ret-type, $ret, $real-ret-type) = common-invoke-pre($sig);
+
+    my $err = static_field_get($rd.class-name, $name, $sig, $ret-type, $ret);
 #    die $err if $err;
 
     return common-invoke-post($ret-type, $ret, $real-ret-type);

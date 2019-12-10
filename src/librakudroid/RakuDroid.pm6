@@ -39,11 +39,6 @@ method TWEAK()
     }
 }
 
-method field-get($name, $type)
-{
-#    return field_get($name, $type);
-}
-
 sub process-args(Signature $s, @args --> Array[RakuDroidJValue])
 {
     my RakuDroidJValue @a;
@@ -88,4 +83,14 @@ method method-invoke($obj, Str $name, Str $sig, Signature $p6sig, *@args)
 method static-method-invoke(Str $name, Str $sig, Signature $p6sig, *@args)
 {
     return RakuDroidHelper::static-method-invoke(self, $name, $sig, process-args($p6sig, @args));
+}
+
+method field-get($obj, $name, $sig)
+{
+    return RakuDroidHelper::field-get(self, $obj, $name, $sig);
+}
+
+method static-field-get($name, $sig)
+{
+    return RakuDroidHelper::static-field-get(self, $name, $sig);
 }
