@@ -238,3 +238,8 @@ install: all
 
 #	cp -a rakudo-$(RELEASE)/install/share/perl6 app/src/main/assets/rakudroid/share/
 #	cp -a rakudo-$(RELEASE)/install/share/nqp app/src/main/assets/rakudroid/share/
+
+install-precomp:
+	rm -rf install
+	mkdir -p install/share/perl6/vendor
+	rakudo/install/bin/perl6 tools/install-vendor.p6 install/share/perl6/vendor

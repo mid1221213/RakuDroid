@@ -17,8 +17,8 @@ PROCESS::<$REPO> := CompUnit::Repository::Staging.new(
 $*REPO.install(
     Distribution::Hash.new(
         {
-            name     => 'RAKUDROID',
-            auth     => 'MIDNITE',
+            name     => 'RakuDroid',
+            auth     => 'Midnite',
             ver      => $*PERL.version.Str,
             provides => %provides,
         },

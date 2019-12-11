@@ -2,11 +2,11 @@ unit class RakuDroidHelper;
 
 use NativeCall;
 use RakuDroidJValue;
+use RakuDroidRole;
 
 use RakuDroid::android::app::Activity;
 
 use MONKEY-TYPING;
-use RakuDroidRole::java::lang::String;
 augment class Str {
     also does RakuDroidRole::java::lang::String;
 }

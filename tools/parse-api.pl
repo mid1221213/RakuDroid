@@ -294,16 +294,16 @@ foreach my $class (keys %classes) {
 use RakuDroidRole;
 ";
 
-    foreach my $used (sort grep { $_ ne $n_class } @{$classes{$class}{uses}}) {
-	my $usedjni = objp62cljni($used);
-	say OUT "use $used;" if exists($classes{$usedjni}) && $used ne $role;
-    }
+    # foreach my $used (sort grep { $_ ne $n_class } @{$classes{$class}{uses}}) {
+    # 	my $usedjni = objp62cljni($used);
+    # 	say OUT "use $used;" if exists($classes{$usedjni}) && $used ne $role;
+    # }
 
     my $is_str = '';
     $is_str = ' is Str' if $n_class eq 'RakuDroid::java::lang::String';
 
     say OUT "
-unit $classes{$class}{type} $n_class$is_str does $role;
+unit class $n_class$is_str does $role;
 ";
 
     $role_deps{text}{$role} .= "
@@ -318,7 +318,10 @@ multi method new(Str \$str)
 	$role_deps{text}{$role} .= "also does $extendsp6;
 ";
 	$role_deps{deps}{$role}{$extendsp6}++;
-	say OUT "also does $extendsp6;";
+
+	$extendsp6 =~ s/^RakuDroidRole/RakuDroid/;
+	say OUT "use $extendsp6;
+also is $extendsp6;";
     }
 
     foreach my $impl (sort @{$classes{$class}{impl}}) {
@@ -385,7 +388,7 @@ has Pointer \$.j-obj is rw;
 	    if ($final) {
 		say OUT "	die 'cannot modify <$field_h->{name}>';";
 	    } else {
-		say OUT "	\$rd.field-set(self, '$field_h->{name}', '$field_h->{sig}', \$new-val);
+		say OUT "	\$rd.field-set('$field_h->{name}', '$field_h->{sig}', \$new-val);
 	return \$new-val;";
 	    }
 	    say OUT "    }

@@ -7,24 +7,6 @@ use RakuDroidJValue;
 my %classes;
 has Str $.class-name;
 
-##########################################
-# use MONKEY-TYPING;
-# use RakuDroidRole::java::lang::String;
-# augment class Str {
-#     also does RakuDroidRole::java::lang::String;
-# }
-# augment class Int {
-#     method int8()   { my int8   $x = self; $x }
-#     method uint8()  { my uint8  $x = self; $x }
-#     method int16()  { my int16  $x = self; $x }
-#     method uint16() { my uint16 $x = self; $x }
-#     method int32()  { my int32  $x = self; $x }
-#     method uint32() { my uint32 $x = self; $x }
-#     method int64()  { my int64  $x = self; $x }
-#     method uint64() { my uint64 $x = self; $x }
-# }
-##########################################
-
 method new-obj()
 {
     return $!class-name; # TBD
