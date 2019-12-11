@@ -198,7 +198,7 @@ gen.touch: android.sigs
 	rm -rf gen
 	tools/parse-api.pl android.sigs
 	mkdir -p $(P6_LIBDIR)
-	cp -a gen/RakuDroid gen/RakuDroidRole $(P6_LIBDIR)/
+	cp -a gen/RakuDroid gen/RakuDroidRole.pm6 $(P6_LIBDIR)/
 	touch gen.touch
 
 android.sigs:

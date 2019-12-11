@@ -134,11 +134,11 @@ my %seen_uses;
 my %seen_ruses;
 
 my $regex = qr/^
-    (
+    ((
       public|
       protected
     )
-    \s
+    \s)?
     (final\s)?
     (abstract\s)?
     (class|interface)
@@ -174,13 +174,13 @@ my $regex = qr/^
 /x;
 
 my $dum;
-my ($protec, $final, $abstract, $type, $name, $extends_all, $extends, $impl_all, $impl);
+my ($protec_all, $protec, $final, $abstract, $type, $name, $extends_all, $extends, $impl_all, $impl);
 my $sig;
 my ($static, $throws_all, $throws);
 
 foreach my $line (<>) {
     1 while $line =~ s/\<[^\<\>]+\>//g;
-    if (($protec, $final, $abstract, $type, $name, $extends_all, $extends, $dum, $dum, $dum, $impl_all, $impl) = $line =~ /^$regex/) {
+    if (($protec_all, $protec, $final, $abstract, $type, $name, $extends_all, $extends, $dum, $dum, $dum, $impl_all, $impl) = $line =~ /^$regex/) {
 
 	$type = 'role' if $type eq 'interface';
 	if (defined($extends)) {
@@ -195,11 +195,11 @@ foreach my $line (<>) {
 	$name =~ s,\.,/,g;
 	$classes{$name} = {
 	    type     => $type,
-	    protec   => $protec,
+	    protec   => $protec // 'public',
 	    final    => $final,
 	    abstract => $abstract,
 	    name     => $name,
-	    extends  => $extends,
+	    extends  => defined($extends) ? [ split(/\s*,\s*/, $extends) ] : [],
 	    impl     => defined($impl) ? [ split(/\s*,\s*/, $impl) ] : [],
 	    methods  => {},
 	    fields   => {},
@@ -214,8 +214,8 @@ foreach my $line (<>) {
 	%seen_ruses = ();
 
 	if (defined($extends)) {
-	    $seen_uses{objjni2objp6($extends)}++;
-	    $seen_ruses{objjni2objp6($extends)}++;
+	    $seen_uses{objjni2objp6($_)}++ for split(/\s*,\s*/, $extends);
+	    $seen_ruses{objjni2objp6($_)}++ for split(/\s*,\s*/, $extends);
 	}
 	if (defined($impl)) {
 	    $seen_uses{objjni2objp6($_)}++ for split(/\s*,\s*/, $impl);
@@ -265,46 +265,38 @@ mkdirs('gen/provides');
 open(OUTPROVS, '>', "gen/provides") or die $!;
 say OUTPROVS "RakuDroid src/librakudroid/RakuDroid.pm6";
 say OUTPROVS "RakuDroidJValue src/librakudroid/RakuDroidJValue.pm6";
+say OUTPROVS "RakuDroidRole gen/RakuDroidRole.pm6";
+
+my %role_deps = (
+    text => {},
+    deps => {},
+    done => {},
+);
 
 foreach my $class (keys %classes) {
     my $n_class = "RakuDroid/$class";
     $n_class =~ s/\$/__/g;
     my $path = $n_class;
     mkdirs($path);
-    my $role_path = $path;
-    $role_path =~ s,/,Role/,;
-    mkdirs($role_path);
 
     $n_class =~ s,/,::,g;
     my $role = $n_class;
     $role =~ s/::/Role::/;
 
-    say OUTPROVS "$role gen/$role_path.pm6";
     say OUTPROVS "$n_class gen/$path.pm6";
 
-    open(OUTROLE, '>', "gen/$role_path.pm6") or die $!;
-    say OUTROLE "# GENERATED, don't edit or you'll loose!
-
-unit role $role;
+    $role_deps{text}{$role} = "role $role {
 ";
 
-#    say OUTROLE "use RakuDroidRole::java::lang::Object;
-#also does RakuDroidRole::java::lang::Object;
-#" unless $role eq 'RakuDroidRole::java::lang::Object';
     open(OUT, '>', "gen/$path.pm6") or die $!;
     say OUT "# GENERATED, don't edit or you'll loose!
 
-use $role;
+use RakuDroidRole;
 ";
 
     foreach my $used (sort grep { $_ ne $n_class } @{$classes{$class}{uses}}) {
 	my $usedjni = objp62cljni($used);
 	say OUT "use $used;" if exists($classes{$usedjni}) && $used ne $role;
-    }
-
-    foreach my $rused (sort grep { $_ ne $n_class } @{$classes{$class}{ruses}}) {
-	my $rusedjni = objp62cljni($rused);
-	say OUTROLE "use $rused;" if exists($classes{$rusedjni}) && $rused ne $role;
     }
 
     my $is_str = '';
@@ -314,22 +306,26 @@ use $role;
 unit $classes{$class}{type} $n_class$is_str does $role;
 ";
 
-    say OUTROLE "
+    $role_deps{text}{$role} .= "
 multi method new(Str \$str)
 {
     self.bless(:value(\$str))
 }
 " if $n_class eq 'RakuDroid::java::lang::String';
 
-    if (defined($classes{$class}{extends})) {
-	my $extendsp6 = objjni2objp6($classes{$class}{extends});
-	say OUTROLE "also does $extendsp6;";
+    foreach my $extends (sort @{$classes{$class}{extends}}) {
+	my $extendsp6 = objjni2objp6($extends);
+	$role_deps{text}{$role} .= "also does $extendsp6;
+";
+	$role_deps{deps}{$role}{$extendsp6}++;
 	say OUT "also does $extendsp6;";
     }
 
     foreach my $impl (sort @{$classes{$class}{impl}}) {
 	my $implp6 = objjni2objp6($impl);
-	say OUTROLE "also does $implp6;";
+	$role_deps{text}{$role} .= "also does $implp6;
+";
+	$role_deps{deps}{$role}{$implp6}++;
 	say OUT "also does $implp6;";
     }
 
@@ -415,8 +411,42 @@ has Pointer \$.j-obj is rw;
 	    };
     }
 
-    close(OUTROLE);
+    $role_deps{text}{$role} .= "}";
     close(OUT);
 }
 
+open(OUTROLE, '>', "gen/RakuDroidRole.pm6") or die $!;
+    say OUTROLE "# GENERATED, don't edit or you'll loose!
+";
+
+sub out_role
+{
+    my ($role, $recurse_h) = @_;
+
+    foreach my $dep (sort keys %{$role_deps{deps}{$role}}) {
+	unless ($role_deps{done}{$dep}) {
+	    if ($recurse_h->{$dep}) { # cannot recurse
+		warn "------------------ $dep";
+		$role_deps{text}{$role} = "role $dep { ... }\n" . $role_deps{text}{$role};
+	    } else {
+		$recurse_h->{$dep}++;
+		out_role($dep, $recurse_h);
+	    }
+	}
+    }
+
+    if (exists($role_deps{text}{$role})) {
+	say OUTROLE $role_deps{text}{$role};
+    } else {
+	die "$role has no text";
+    }
+    $role_deps{done}{$role}++;
+}
+
+foreach my $role (sort keys %{$role_deps{text}}) {
+    my $recurse_h = { $role => 1 };
+    out_role($role, $recurse_h) unless $role_deps{done}{$role};
+}
+
+close(OUTROLE);
 close(OUTPROVS);
