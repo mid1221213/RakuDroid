@@ -85,12 +85,12 @@ method static-method-invoke(Str $name, Str $sig, Signature $p6sig, *@args)
     return RakuDroidHelper::static-method-invoke(self, $name, $sig, process-args($p6sig, @args));
 }
 
-method field-get($obj, $name, $sig)
+method field-get($obj, Str $name, Str $sig)
 {
     return RakuDroidHelper::field-get(self, $obj, $name, $sig);
 }
 
-method static-field-get($name, $sig)
+method static-field-get(Str $name, Str $sig)
 {
     return RakuDroidHelper::static-field-get(self, $name, $sig);
 }

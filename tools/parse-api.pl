@@ -356,7 +356,7 @@ has Pointer \$.j-obj is rw;
 	    if ($method_h->{name} eq 'new') {
 		say OUT "${multi}method $method_h->{name}($sigp6)
 {
-    return \$rd.ctor-invoke(self, '$method_h->{sig}', :($args_s)" . join('', map { ", \$arg$_" } 1..$nbargs) . ");
+    return \$rd.ctor-invoke('$method_h->{sig}', :($args_s)" . join('', map { ", \$arg$_" } 1..$nbargs) . ");
 }
 ";
 	    } elsif (defined($method_h->{static})) {
@@ -383,45 +383,33 @@ has Pointer \$.j-obj is rw;
 	my $final = $field_h->{final};
 
 	if ($static) {
-	    say OUT "my \$$field_h->{name}-cache;
-my Bool \$$field_h->{name}-cached = False;
-our sub $field_h->{name}(\$new-val?)
+	    say OUT "our sub $field_h->{name}(\$new-val?)
 {
     if \$new-val.defined {";
 	    if ($final) {
 		say OUT "	die 'cannot modify <$field_h->{name}>';";
 	    } else {
-		say OUT "	\$$field_h->{name}-cached = True;
-	\$$field_h->{name}-cache = \$new-val;
-	\$rd.field-set(self, '$field_h->{name}', '$field_h->{sig}', \$new-val);
+		say OUT "	\$rd.field-set(self, '$field_h->{name}', '$field_h->{sig}', \$new-val);
 	return \$new-val;";
 	    }
 	    say OUT "    }
 
-    \$$field_h->{name}-cache = \$rd.static-field-get('$field_h->{name}', '$field_h->{sig}') unless \$$field_h->{name}-cached;
-    \$$field_h->{name}-cached = True;
-    return \$$field_h->{name}-cache;
+    return \$rd.static-field-get('$field_h->{name}', '$field_h->{sig}');
 }
 ";
 	    } else {
-	    say OUT "has \$!$field_h->{name}-cache;
-has \$!$field_h->{name}-cached;
-method $field_h->{name}(\$new-val?)
+	    say OUT "method $field_h->{name}(\$new-val?)
 {
     if \$new-val.defined {";
 	    if ($final) {
 		say OUT "	die 'cannot modify <$field_h->{name}>';";
 	    } else {
-		say OUT "	\$!$field_h->{name}-cached = True;
-	\$!$field_h->{name}-cache = \$new-val;
-	\$rd.field-set(self, '$field_h->{name}', '$field_h->{sig}', \$new-val);
+		say OUT "	\$rd.field-set(self, '$field_h->{name}', '$field_h->{sig}', \$new-val);
 	return \$new-val;";
 	    }
 	    say OUT "    }
 
-    \$!$field_h->{name}-cache = \$rd.field-get(self, '$field_h->{name}', '$field_h->{sig}') unless \$!$field_h->{name}-cached;
-    \$!$field_h->{name}-cached = True;
-    return \$!$field_h->{name}-cache;
+    return \$rd.field-get(self, '$field_h->{name}', '$field_h->{sig}');
 }
 "
 	    };

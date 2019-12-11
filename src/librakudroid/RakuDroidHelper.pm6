@@ -121,7 +121,7 @@ sub common-invoke-post(Str $ret-type, RakuDroidJValue $ret, Str $real-ret-type)
     }
 }
 
-our sub ctor-invoke($rd, $sig, @args)
+our sub ctor-invoke($rd, Str $sig, @args)
 {
     my $c-args := CArray[RakuDroidJValue].new(@args);
     $c-args[@args.elems] = RakuDroidJValue.new(:type<;>, :val(0));;
@@ -135,7 +135,7 @@ our sub ctor-invoke($rd, $sig, @args)
 	require ::($ret-type);
     }
 
-    my $ret = RakuDroidJValue.new(:type<L>, :val(0)).val;
+    my $ret = RakuDroidJValue.new(:type<L>, :val(0));
 
     my $err = ctor_invoke($rd.class-name, $sig, $c-args, $ret);
 #    die $err if $err;
@@ -143,7 +143,7 @@ our sub ctor-invoke($rd, $sig, @args)
     return ::($ret-type).bless(j-obj => $ret.val.object);
 }
 
-our sub method-invoke($rd, $obj, $name, $sig, @args)
+our sub method-invoke($rd, $obj, Str $name, Str $sig, @args)
 {
     my $c-args := CArray[RakuDroidJValue].new(@args);
     $c-args[@args.elems] = RakuDroidJValue.new(:type<;>, :val(0));;
@@ -156,7 +156,7 @@ our sub method-invoke($rd, $obj, $name, $sig, @args)
     return common-invoke-post($ret-type, $ret, $real-ret-type);
 }
 
-our sub static-method-invoke($rd, $name, $sig, @args)
+our sub static-method-invoke($rd, Str $name, Str $sig, @args)
 {
     my $c-args := CArray[RakuDroidJValue].new(@args);
     $c-args[@args.elems] = RakuDroidJValue.new(:type<;>, :val(0));;
@@ -169,7 +169,7 @@ our sub static-method-invoke($rd, $name, $sig, @args)
     return common-invoke-post($ret-type, $ret, $real-ret-type);
 }
 
-our sub field-get($rd, $obj, $name, $sig)
+our sub field-get($rd, $obj, Str $name, Str $sig)
 {
     my ($ret-type, $ret, $real-ret-type) = common-invoke-pre($sig);
 
@@ -179,7 +179,7 @@ our sub field-get($rd, $obj, $name, $sig)
     return common-invoke-post($ret-type, $ret, $real-ret-type);
 }
 
-our sub static-field-get($rd, $name, $sig)
+our sub static-field-get($rd, Str $name, Str $sig)
 {
     my ($ret-type, $ret, $real-ret-type) = common-invoke-pre($sig);
 
