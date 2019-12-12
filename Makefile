@@ -133,7 +133,8 @@ check:
 	fi
 
 
-all: $(DROID_SO) $(MOAR_SO) $(P6_OPS_SO) $(P6_LIBDIR)/RakuDroidHelper.pm6 $(P6_LIBDIR)/RakuDroidJValue.pm6 $(P6_LIBDIR)/RakuDroid.pm6 gen.touch
+# all: $(DROID_SO) $(MOAR_SO) $(P6_OPS_SO) $(P6_LIBDIR)/RakuDroidHelper.pm6 $(P6_LIBDIR)/RakuDroidJValue.pm6 $(P6_LIBDIR)/RakuDroid.pm6 gen.touch
+all: $(DROID_SO) $(MOAR_SO) $(P6_OPS_SO) $(P6_LIBDIR)/RakuDroidHelper.pm6 gen.touch
 
 #	git clone -b $(MOAR_BRANCH) https://github.com/MoarVM/MoarVM.git $(MOAR_TARGET)
 $(MOAR_TARGET).touch:
@@ -179,11 +180,11 @@ $(P6_LIBDIR):
 $(P6_LIBDIR)/RakuDroidHelper.pm6: $(P6_LIBDIR) src/librakudroid/RakuDroidHelper.pm6
 	cp -a src/librakudroid/RakuDroidHelper.pm6 $(P6_LIBDIR)/
 
-$(P6_LIBDIR)/RakuDroidJValue.pm6: $(P6_LIBDIR) src/librakudroid/RakuDroidJValue.pm6
-	cp -a src/librakudroid/RakuDroidJValue.pm6 $(P6_LIBDIR)/
+# $(P6_LIBDIR)/RakuDroidJValue.pm6: $(P6_LIBDIR) src/librakudroid/RakuDroidJValue.pm6
+# 	cp -a src/librakudroid/RakuDroidJValue.pm6 $(P6_LIBDIR)/
 
-$(P6_LIBDIR)/RakuDroid.pm6: $(P6_LIBDIR) src/librakudroid/RakuDroid.pm6
-	cp -a src/librakudroid/RakuDroid.pm6 $(P6_LIBDIR)/
+# $(P6_LIBDIR)/RakuDroid.pm6: $(P6_LIBDIR) src/librakudroid/RakuDroid.pm6
+# 	cp -a src/librakudroid/RakuDroid.pm6 $(P6_LIBDIR)/
 
 $(DROID_SO): $(DROID_SRCS) $(DROID_HDRS) $(RAKUDO).touch $(MOAR_TARGET).touch
 	mkdir -p $(DROID_SO_DIR)
@@ -199,7 +200,7 @@ gen.touch: android.sigs
 	rm -rf gen
 	tools/parse-api.pl android.sigs
 	mkdir -p $(P6_LIBDIR)
-	cp -a gen/RakuDroid gen/RakuDroidRole.pm6 $(P6_LIBDIR)/
+	cp -a gen/RakuDroid gen/RakuDroidRoles.pm6 $(P6_LIBDIR)/
 	touch gen.touch
 
 android.sigs:

@@ -265,7 +265,7 @@ mkdirs('gen/provides');
 open(OUTPROVS, '>', "gen/provides") or die $!;
 say OUTPROVS "RakuDroid src/librakudroid/RakuDroid.pm6";
 say OUTPROVS "RakuDroidJValue src/librakudroid/RakuDroidJValue.pm6";
-say OUTPROVS "RakuDroidRole gen/RakuDroidRole.pm6";
+say OUTPROVS "RakuDroidRoles gen/RakuDroidRoles.pm6";
 
 my %role_deps = (
     text => {},
@@ -283,7 +283,7 @@ foreach my $class (keys %classes) {
     my $role = $n_class;
     $role =~ s/::/Role::/;
 
-    say OUTPROVS "$n_class gen/$path.pm6";
+#    say OUTPROVS "$n_class gen/$path.pm6";
 
     $role_deps{text}{$role} = "role $role {
 ";
@@ -291,7 +291,7 @@ foreach my $class (keys %classes) {
     open(OUT, '>', "gen/$path.pm6") or die $!;
     say OUT "# GENERATED, don't edit or you'll loose!
 
-use RakuDroidRole;
+use RakuDroidRoles;
 ";
 
     # foreach my $used (sort grep { $_ ne $n_class } @{$classes{$class}{uses}}) {
@@ -429,7 +429,7 @@ has Pointer \$.j-obj is rw;
     close(OUT);
 }
 
-open(OUTROLE, '>', "gen/RakuDroidRole.pm6") or die $!;
+open(OUTROLE, '>', "gen/RakuDroidRoles.pm6") or die $!;
     say OUTROLE "# GENERATED, don't edit or you'll loose!
 ";
 

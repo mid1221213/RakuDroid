@@ -2,7 +2,7 @@ unit class RakuDroidHelper;
 
 use NativeCall;
 use RakuDroidJValue;
-use RakuDroidRole;
+use RakuDroidRoles;
 
 use RakuDroid::android::app::Activity;
 
