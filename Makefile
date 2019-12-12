@@ -71,7 +71,7 @@ MOAR_SO         = $(DROID_SO_DIR)/libmoar.so
 P6_LIBDIR       = $(DROID_PREFIX)/assets/rakudroid/lib
 
 DROID_DEFINES   = -DSTATIC_NQP_HOME="/rakudroid/share/nqp"
-DROID_DEFINES  += -DSTATIC_PERL6_HOME="/rakudroid/share/perl6"
+DROID_DEFINES  += -DSTATIC_RAKUDO_HOME="/rakudroid/share/perl6"
 DROID_DEFINES  += -DSTATIC_PERL6_LIB="/rakudroid/lib"
 DROID_DEFINES  += -DSTATIC_HELPER_FILE="/rakudroid/lib/RakuDroidHelper.pm6"
 DROID_DEFINES  += -DLIBFILENAME="$(DROID_SO_NAME)"

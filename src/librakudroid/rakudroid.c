@@ -120,12 +120,12 @@ void rakudo_init(int from_main, int argc, char *argv[], int64_t *main_ok)
 
     exec_dir_path_size = strlen(exec_dir_path);
 
-    /* Retrieve PERL6_HOME and NQP_HOME. */
+    /* Retrieve RAKUDO_HOME and NQP_HOME. */
 
     nqp_home = STRINGIFY(STATIC_NQP_HOME);
     nqp_home_size = strlen(nqp_home);
 
-    perl6_home = STRINGIFY(STATIC_PERL6_HOME);
+    perl6_home = STRINGIFY(STATIC_RAKUDO_HOME);
     perl6_home_size = strlen(perl6_home);
 
     perl6_lib = STRINGIFY(STATIC_PERL6_LIB);
@@ -181,7 +181,7 @@ void rakudo_init(int from_main, int argc, char *argv[], int64_t *main_ok)
     }
 
     strcpy(perl6_lib_path + home_size, perl6_lib);
-    setenv("PERL6LIB", perl6_lib_path, 1);
+    setenv("RAKUDOLIB", perl6_lib_path, 1);
     free(perl6_lib_path);
 
     strcpy(lib_path[0] + home_size +   nqp_home_size, "/lib");
