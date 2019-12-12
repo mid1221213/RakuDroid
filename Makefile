@@ -142,7 +142,8 @@ $(MOAR_TARGET).touch:
 	cd $(MOAR_TARGET) && \
 		git submodule sync --quiet && git submodule --quiet update --init && \
 		git am ../src/librakudroid/0001-Make-MoarVM-cross-compile-nicely-for-Android.patch && \
-		MAKEFLAGS="-j" perl Configure.pl --build=$(BUILD_ARCH) --host=$(TARGET_ARCH) --no-jit --relocatable && \
+		git am ../src/librakudroid/0001-Make-MoarVM-cross-compile-w-jit-nicely-for-Android.patch && \
+		MAKEFLAGS="-j" perl Configure.pl --build=$(BUILD_ARCH) --host=$(TARGET_ARCH) --jit --relocatable && \
 		MAKEFLAGS="-j" make install
 	touch $(MOAR_TARGET).touch
 

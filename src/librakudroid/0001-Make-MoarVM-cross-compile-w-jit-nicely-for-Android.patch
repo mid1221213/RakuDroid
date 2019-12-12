@@ -1,0 +1,58 @@
+From b19c858e534e354eb2834a070f4fc83d0adcf708 Mon Sep 17 00:00:00 2001
+From: Alexandre Jousset <mid@gtmp.org>
+Date: Thu, 12 Dec 2019 01:52:29 +0100
+Subject: [PATCH] Make MoarVM cross compile w/jit nicely for Android
+
+---
+ Configure.pl      | 2 +-
+ build/Makefile.in | 3 ++-
+ build/setup.pm    | 1 +
+ 3 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/Configure.pl b/Configure.pl
+index 9064a9288..37b3af62c 100755
+--- a/Configure.pl
++++ b/Configure.pl
+@@ -127,7 +127,7 @@ $config{pkgconfig} = defined_or $args{pkgconfig}, '/usr/bin/pkg-config';
+ 
+ 
+ # set options that take priority over all others
+-my @keys = qw( ar cc ld make );
++my @keys = qw( ar cc cc_host ld make );
+ @config{@keys} = @args{@keys};
+ 
+ for (keys %defaults) {
+diff --git a/build/Makefile.in b/build/Makefile.in
+index f44bed175..338d54c91 100644
+--- a/build/Makefile.in
++++ b/build/Makefile.in
+@@ -1,4 +1,5 @@
+ CC     = @cc@
++CC-HOST = @cc_host@
+ LD     = @ld@
+ AR     = @ar@
+ AS     = @as@
+@@ -638,7 +639,7 @@ src/strings/unicode.c: src/strings/unicode_db.c src/strings/unicode_uca.c src/st
+ 
+ # Minilua requires only -lm, no libraries
+ $(MINILUA): 3rdparty/dynasm/minilua.c
+-	$(CC) $(MINILUA_LDFLAGS) 3rdparty/dynasm/minilua.c $(MINILUA_LDLIBS) -o $@
++	$(CC-HOST) $(MINILUA_LDFLAGS) 3rdparty/dynasm/minilua.c $(MINILUA_LDLIBS) -o $@
+ 
+ .dasc.c:
+ 	$(MSG) preprocessing $<
+diff --git a/build/setup.pm b/build/setup.pm
+index cbdbd4f54..a57d05f5c 100644
+--- a/build/setup.pm
++++ b/build/setup.pm
+@@ -377,6 +377,7 @@ our %COMPILERS = (
+         -toolchain => 'android',
+ 
+         cc => 'clang',
++        cc_host => 'gcc',
+         ld => undef,
+         as => 'as',
+ 
+-- 
+2.20.1
+
