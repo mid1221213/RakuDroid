@@ -14,10 +14,10 @@ method new-obj()
 
 method TWEAK()
 {
-    note "TWEAKing class $!class-name";
+    # note "TWEAKing class $!class-name";
     unless %classes{$!class-name}:exists {
 	%classes{$!class-name} = self.new-obj;
-	note "created obj of class $!class-name";
+	# note "created obj of class $!class-name";
     }
 }
 

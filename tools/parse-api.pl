@@ -299,32 +299,36 @@ use RakuDroidRole;
     # 	say OUT "use $used;" if exists($classes{$usedjni}) && $used ne $role;
     # }
 
-    my $is_str = '';
-    $is_str = ' is Str' if $n_class eq 'RakuDroid::java::lang::String';
+    my $type = $classes{$class}{type};
 
-    say OUT "
+    if ($type eq 'class') {
+	my $is_str = '';
+	$is_str = ' is Str' if $n_class eq 'RakuDroid::java::lang::String';
+
+	say OUT "
 unit class $n_class$is_str does $role;
 ";
 
-    $role_deps{text}{$role} .= "
+	$role_deps{text}{$role} .= "
 multi method new(Str \$str)
 {
     self.bless(:value(\$str))
 }
 " if $n_class eq 'RakuDroid::java::lang::String';
-
-    foreach my $extends (sort @{$classes{$class}{extends}}) {
-	my $extendsp6 = objjni2objp6($extends);
-	$role_deps{text}{$role} .= "also does $extendsp6;
+    } else {
+	say OUT "
+unit role $n_class does $role;
 ";
-	$role_deps{deps}{$role}{$extendsp6}++;
+    }
 
+    foreach my $extends (@{$classes{$class}{extends}}) {
+	my $extendsp6 = objjni2objp6($extends);
 	$extendsp6 =~ s/^RakuDroidRole/RakuDroid/;
 	say OUT "use $extendsp6;
 also is $extendsp6;";
     }
 
-    foreach my $impl (sort @{$classes{$class}{impl}}) {
+    foreach my $impl (@{$classes{$class}{impl}}) {
 	my $implp6 = objjni2objp6($impl);
 	$role_deps{text}{$role} .= "also does $implp6;
 ";
@@ -332,86 +336,93 @@ also is $extendsp6;";
 	say OUT "also does $implp6;";
     }
 
-    say OUT "
+    if ($type ne 'role') {
+	say OUT "
 use RakuDroid;
 use NativeCall :types;
 
 my RakuDroid \$rd = RakuDroid.new(:class-name('$class'));
 has Pointer \$.j-obj is rw;
 ";
+    }
 
-    foreach my $method (sort keys %{$classes{$class}{methods}}) {
-	my $multi = @{$classes{$class}{methods}{$method}} > 1 ? 'multi ' : '';
-	say OUT "our proto $method(|) { * }" if $multi && defined($classes{$class}{methods}{$method}[0]{static});
+    if ($type ne 'role') {
+	foreach my $method (sort keys %{$classes{$class}{methods}}) {
+	    next if $type eq 'role' && ($classes{$class}{methods}{$method}[0]{static} || $classes{$class}{methods}{$method}[0]{abstract});
+	    my $multi = @{$classes{$class}{methods}{$method}} > 1 ? 'multi ' : '';
+	    say OUT "our proto $method(|) { * }" if $multi && $classes{$class}{methods}{$method}[0]{static};
 
-	foreach my $method_h (@{$classes{$class}{methods}{$method}}) {
-	    my @sig_uses = sigjni2uses($method_h->{sig});
-	    next unless @sig_uses == 0 || @sig_uses == grep { exists($classes{objp62cljni($_)}) } @sig_uses;
-	    my ($args, $args_s, $ret, $nbargs) = sigjni2sigp6($method_h->{sig});
-	    my $sigp6 = $args;
-	    $sigp6 .= " --> $ret" if $ret && $ret ne 'void';
-	    $sigp6 =~ s/^\s+//;
+	    foreach my $method_h (@{$classes{$class}{methods}{$method}}) {
+		my @sig_uses = sigjni2uses($method_h->{sig});
+		next unless @sig_uses == 0 || @sig_uses == grep { exists($classes{objp62cljni($_)}) } @sig_uses;
+		my ($args, $args_s, $ret, $nbargs) = sigjni2sigp6($method_h->{sig});
+		my $sigp6 = $args;
+		$sigp6 .= " --> $ret" if $ret && $ret ne 'void';
+		$sigp6 =~ s/^\s+//;
 
-	    if ($method_h->{name} eq 'new') {
-		say OUT "${multi}method $method_h->{name}($sigp6)
+		if ($method_h->{name} eq 'new') {
+		    say OUT "${multi}method $method_h->{name}($sigp6)
 {
     return \$rd.ctor-invoke('$method_h->{sig}', :($args_s)" . join('', map { ", \$arg$_" } 1..$nbargs) . ");
 }
 ";
-	    } elsif (defined($method_h->{static})) {
-		say OUT "${multi}sub $method_h->{name}($sigp6)
+		} elsif ($method_h->{static}) {
+		    say OUT "${multi}sub $method_h->{name}($sigp6)
 {
     return \$rd.static-method-invoke('$method_h->{name}', '$method_h->{sig}', :($args_s)" . join('', map { ", \$arg$_" } 1..$nbargs) . ");
 }
 ";
-	    } else {
-	    say OUT "${multi}method $method_h->{name}($sigp6)
+		} else {
+		    say OUT "${multi}method $method_h->{name}($sigp6)
 {
     return \$rd.method-invoke(self, '$method_h->{name}', '$method_h->{sig}', :($args_s)" . join('', map { ", \$arg$_" } 1..$nbargs) . ");
 }
-"
-	    };
+";
+		}
+	    }
 	}
     }
 
-    foreach my $field_h (sort { $a->{name} cmp $b->{name} } values %{$classes{$class}{fields}}) {
-	my @sig_uses = sigjni2uses($field_h->{sig});
-	next unless @sig_uses == 0 || @sig_uses == grep { exists($classes{objp62cljni($_)}) } @sig_uses;
-	$field_h->{name} =~ s/\$/__/g;
-	my $static = $field_h->{static};
-	my $final = $field_h->{final};
+    if ($type ne 'role') {
+	foreach my $field_h (sort { $a->{name} cmp $b->{name} } values %{$classes{$class}{fields}}) {
+	    my @sig_uses = sigjni2uses($field_h->{sig});
+	    next unless @sig_uses == 0 || @sig_uses == grep { exists($classes{objp62cljni($_)}) } @sig_uses;
+	    $field_h->{name} =~ s/\$/__/g;
+	    my $static = $field_h->{static};
+	    my $final = $field_h->{final};
 
-	if ($static) {
-	    say OUT "our sub $field_h->{name}(\$new-val?)
+	    if ($static) {
+		say OUT "our sub $field_h->{name}-field(\$new-val?)
 {
     if \$new-val.defined {";
-	    if ($final) {
-		say OUT "	die 'cannot modify <$field_h->{name}>';";
-	    } else {
-		say OUT "	\$rd.field-set('$field_h->{name}', '$field_h->{sig}', \$new-val);
+		if ($final) {
+		    say OUT "	die 'cannot modify <$field_h->{name}>';";
+		} else {
+		    say OUT "	\$rd.field-set('$field_h->{name}', '$field_h->{sig}', \$new-val);
 	return \$new-val;";
-	    }
-	    say OUT "    }
+		}
+		say OUT "    }
 
     return \$rd.static-field-get('$field_h->{name}', '$field_h->{sig}');
 }
 ";
 	    } else {
-	    say OUT "method $field_h->{name}(\$new-val?)
+		say OUT "method $field_h->{name}-field(\$new-val?)
 {
     if \$new-val.defined {";
-	    if ($final) {
-		say OUT "	die 'cannot modify <$field_h->{name}>';";
-	    } else {
-		say OUT "	\$rd.field-set(self, '$field_h->{name}', '$field_h->{sig}', \$new-val);
+		if ($final) {
+		    say OUT "	die 'cannot modify <$field_h->{name}>';";
+		} else {
+		    say OUT "	\$rd.field-set(self, '$field_h->{name}', '$field_h->{sig}', \$new-val);
 	return \$new-val;";
-	    }
-	    say OUT "    }
+		    }
+		say OUT "    }
 
     return \$rd.field-get(self, '$field_h->{name}', '$field_h->{sig}');
 }
 "
-	    };
+	    }
+	}
     }
 
     $role_deps{text}{$role} .= "}";

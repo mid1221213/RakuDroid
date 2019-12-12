@@ -214,7 +214,7 @@ clean:
 clean-all: clean
 	rm -rf $(TO_CLEAN)
 
-install: all
+install-pre: all
 	mkdir -p app
 	sed -e s/%%ARCH_JNI%%/$(JNI_ARCH)/ src/AndroidStudio/build.gradle.in >app/build.gradle
 	mkdir -p $(DROID_PREFIX)/java/$(PROJ_JAVA_PATH)
@@ -232,14 +232,19 @@ install: all
 	mkdir -p app/src/main/assets/rakudroid/share/perl6/runtime/dynext
 	cp -a $(P6_OPS_SO) app/src/main/assets/rakudroid/share/perl6/runtime/dynext/
 	cp -a rakudo/install/share/nqp app/src/main/assets/rakudroid/share/
+
+install-post:
 	tar -czf MyApplication.tgz app
 	@echo
 	@echo Ok, now go to your Android project\'s root directory \(where the directory \'app\' resides\) and do \'tar -xzvf `pwd`/MyApplication.tgz\'
 
-#	cp -a rakudo-$(RELEASE)/install/share/perl6 app/src/main/assets/rakudroid/share/
-#	cp -a rakudo-$(RELEASE)/install/share/nqp app/src/main/assets/rakudroid/share/
+install: install-pre install-post
 
-install-precomp:
+precomp:
 	rm -rf install
 	mkdir -p install/share/perl6/vendor
 	rakudo/install/bin/perl6 tools/install-vendor.p6 install/share/perl6/vendor
+	rm -rf app/src/main/assets/rakudroid/share/perl6/vendor
+	cp -a install/share/perl6/vendor app/src/main/assets/rakudroid/share/perl6/
+
+install-precomp: install-pre precomp install-post
