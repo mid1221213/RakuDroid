@@ -80,6 +80,43 @@ static int callback(struct dl_phdr_info *info, size_t size, void *data)
     return 0;
 }
 
+static int pfd[2];
+static pthread_t thr;
+static const char *tag = "RAKUUUUUUUUUUUUUUUUUUU";
+
+static void *thread_func(void *dum)
+{
+    ssize_t rdsz;
+    char buf[10240];
+
+    for (;;)
+        while((rdsz = read(pfd[0], buf, sizeof buf - 1)) > 0) {
+//            if(buf[rdsz - 1] == '\n') --rdsz;
+            buf[rdsz] = 0;  /* add null-terminator */
+            __android_log_write(ANDROID_LOG_DEBUG, tag, buf);
+        }
+
+    return 0;
+}
+
+int start_logger()
+{
+    /* make stdout line-buffered and stderr unbuffered */
+    setvbuf(stdout, 0, _IOLBF, 0);
+    setvbuf(stderr, 0, _IONBF, 0);
+
+    /* create the pipe and redirect stdout and stderr */
+    pipe(pfd);
+    dup2(pfd[1], 1);
+    dup2(pfd[1], 2);
+
+    /* spawn the logging thread */
+    if(pthread_create(&thr, 0, thread_func, 0) == -1)
+        return -1;
+    pthread_detach(thr);
+    return 0;
+}
+
 void rakudo_init(int from_main, int argc, char *argv[], int64_t *main_ok)
 {
     MVMThreadContext *tc;
@@ -204,8 +241,10 @@ void rakudo_init(int from_main, int argc, char *argv[], int64_t *main_ok)
         MVM_vm_exit(instance); // does not return
     }
 
-    close(2);
-    open("/data/data/com.example.myapplication/files/stderr", O_APPEND | O_CREAT | O_WRONLY);
+    start_logger();
+
+    /* close(2); */
+    /* open("/data/data/com.example.myapplication/files/stderr", O_APPEND | O_CREAT | O_WRONLY); */
 //    setenv("RAKUDO_MAX_THREADS", "2", 1);
     setenv("RAKUDO_MODULE_DEBUG", "1", 1);
 
