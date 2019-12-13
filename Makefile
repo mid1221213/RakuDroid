@@ -240,13 +240,15 @@ install-post:
 	@echo
 	@echo Ok, now go to your Android project\'s root directory \(where the directory \'app\' resides\) and do \'tar -xzvf `pwd`/MyApplication.tgz\'
 
-install: install-pre install-post
+install: install-pre install-precompiled install-post
 
 precomp:
 	rm -rf install
 	mkdir -p install/share/perl6/vendor
 	rakudo/install/bin/perl6 tools/install-vendor.p6 install/share/perl6/vendor
+
+install-precomp: install-pre precomp install-precompiled install-post
+
+install-precompiled:
 	rm -rf app/src/main/assets/rakudroid/share/perl6/vendor
 	cp -a install/share/perl6/vendor app/src/main/assets/rakudroid/share/perl6/
-
-install-precomp: install-pre precomp install-post
