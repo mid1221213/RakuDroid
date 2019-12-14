@@ -140,7 +140,7 @@ our sub ctor-invoke($rd, Str $sig, @args)
     my $ret = RakuDroidJValue.new(:type<L>, :val(0));
 
     my $err = ctor_invoke($rd.class-name, $sig, $c-args, $ret);
-#    die $err if $err;
+    die $err if $err;
 
     return ::($ret-type).bless(j-obj => $ret.val.object);
 }
@@ -153,7 +153,7 @@ our sub method-invoke($rd, $obj, Str $name, Str $sig, @args)
     my ($ret-type, $ret, $real-ret-type) = common-invoke-pre($sig);
 
     my $err = method_invoke($rd.class-name, $obj.j-obj, $name, $sig, $c-args, $ret-type, $ret);
-#    die $err if $err;
+    die $err if $err;
 
     return common-invoke-post($ret-type, $ret, $real-ret-type);
 }
@@ -166,7 +166,7 @@ our sub static-method-invoke($rd, Str $name, Str $sig, @args)
     my ($ret-type, $ret, $real-ret-type) = common-invoke-pre($sig);
 
     my $err = static_method_invoke($rd.class-name, $name, $sig, $c-args, $ret-type, $ret);
-#    die $err if $err;
+    die $err if $err;
 
     return common-invoke-post($ret-type, $ret, $real-ret-type);
 }
@@ -176,7 +176,7 @@ our sub field-get($rd, $obj, Str $name, Str $sig)
     my ($ret-type, $ret, $real-ret-type) = common-invoke-pre($sig);
 
     my $err = field_get($rd.class-name, $obj.j-obj, $name, $sig, $ret-type, $ret);
-#    die $err if $err;
+    die $err if $err;
 
     return common-invoke-post($ret-type, $ret, $real-ret-type);
 }
@@ -186,7 +186,7 @@ our sub static-field-get($rd, Str $name, Str $sig)
     my ($ret-type, $ret, $real-ret-type) = common-invoke-pre($sig);
 
     my $err = static_field_get($rd.class-name, $name, $sig, $ret-type, $ret);
-#    die $err if $err;
+    die $err if $err;
 
     return common-invoke-post($ret-type, $ret, $real-ret-type);
 }
@@ -194,11 +194,11 @@ our sub static-field-get($rd, Str $name, Str $sig)
 our sub field-set($rd, $obj, Str $name, Str $sig, $val)
 {
     my $err = field_set($rd.class-name, $obj.j-obj, $name, $sig, substr($sig, *-1), $val);
-#    die $err if $err;
+    die $err if $err;
 }
 
 our sub static-field-set($rd, Str $name, Str $sig, $val)
 {
     my $err = static_field_get($rd.class-name, $name, $sig, substr($sig, *-1), $val);
-#    die $err if $err;
+    die $err if $err;
 }

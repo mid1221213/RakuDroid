@@ -111,7 +111,7 @@ extern "C" char *jni_ctor_invoke(char *class_name, char *sig, rakujvalue_t **arg
 
     release_jargs(args, jargs);
 
-    return strdup("OK");
+    return strdup("");
 }
 
 extern "C" char *jni_method_invoke(char *class_name, jobject obj, char *name, char *sig, rakujvalue_t **args, char ret_type, rakujvalue_t *ret)
@@ -183,7 +183,7 @@ extern "C" char *jni_method_invoke(char *class_name, jobject obj, char *name, ch
 
     release_jargs(args, jargs);
 
-    return strdup("OK");
+    return strdup("");
 }
 
 extern "C" char *jni_static_method_invoke(char *class_name, char *name, char *sig, rakujvalue_t **args, char ret_type, rakujvalue_t *ret)
@@ -255,7 +255,7 @@ extern "C" char *jni_static_method_invoke(char *class_name, char *name, char *si
 
     release_jargs(args, jargs);
 
-    return strdup("OK");
+    return strdup("");
 }
 
 extern "C" char *jni_field_get(char *class_name, jobject obj, char *name, char *sig, char ret_type, rakujvalue_t *ret)
@@ -320,7 +320,7 @@ extern "C" char *jni_field_get(char *class_name, jobject obj, char *name, char *
         return strdup("jni_field_get(): Get*Field raised exception!");
     }
 
-    return strdup("OK");
+    return strdup("");
 }
 
 extern "C" char *jni_static_field_get(char *class_name, char *name, char *sig, char ret_type, rakujvalue_t *ret)
@@ -385,7 +385,7 @@ extern "C" char *jni_static_field_get(char *class_name, char *name, char *sig, c
         return strdup("jni_static_field_get(): GetStatic*Field raised exception!");
     }
 
-    return strdup("OK");
+    return strdup("");
 }
 
 extern "C" char *jni_field_set(char *class_name, jobject obj, char *name, char *sig, char val_type, rakujvalue_t *val)
@@ -450,7 +450,7 @@ extern "C" char *jni_field_set(char *class_name, jobject obj, char *name, char *
         return strdup("jni_field_set(): Set*Field raised exception!");
     }
 
-    return strdup("OK");
+    return strdup("");
 }
 
 extern "C" char *jni_static_field_set(char *class_name, char *name, char *sig, char val_type, rakujvalue_t *val)
@@ -515,5 +515,5 @@ extern "C" char *jni_static_field_set(char *class_name, char *name, char *sig, c
         return strdup("jni_static_field_set(): SetStatic*Field raised exception!");
     }
 
-    return strdup("OK");
+    return strdup("");
 }
