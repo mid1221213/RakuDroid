@@ -241,7 +241,7 @@ void rakudo_init(int from_main, int argc, char *argv[], int64_t *main_ok)
         MVM_vm_exit(instance); // does not return
     }
 
-    start_logger();
+    /* start_logger(); */
 
     /* close(2); */
     /* open("/data/data/com.example.myapplication/files/stderr", O_APPEND | O_CREAT | O_WRONLY); */
