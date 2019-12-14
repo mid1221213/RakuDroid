@@ -1,8 +1,6 @@
 app
 *.tgz
 MoarVM-*
-rakudo-*
-android
-android.sigs
+rakudo*
 gen
 gen.touch
