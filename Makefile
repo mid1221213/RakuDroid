@@ -197,10 +197,11 @@ $(P6_OPS_SO): $(P6_OPS_SRCS) $(RAKUDO).touch
 	mkdir -p $(P6_OPS_SO_DIR)
 	$(CC) $(P6_OPS_CFLAGS) $(P6_OPS_LDFLAGS) -o $(P6_OPS_SO) $(P6_OPS_SRCS) $(P6_OPS_LIBS)
 
+#	cp -a gen/RakuDroid gen/RakuDroidRoles.pm6 $(P6_LIBDIR)/
 gen.touch: gen/android.sigs
 	tools/parse-api.pl gen/android.sigs
 	mkdir -p $(P6_LIBDIR)
-	cp -a gen/RakuDroid gen/RakuDroidRoles.pm6 $(P6_LIBDIR)/
+	cp -a gen/RakuDroid $(P6_LIBDIR)/
 	touch gen.touch
 
 gen/android.sigs:
@@ -252,3 +253,6 @@ install-precomp: install-pre precomp install-precompiled install-post
 install-precompiled:
 	rm -rf app/src/main/assets/rakudroid/share/perl6/vendor
 	cp -a install/share/perl6/vendor app/src/main/assets/rakudroid/share/perl6/
+
+clean-arch:
+	rm -rf gen/android.sigs gen/libperl6_ops_moar.so
