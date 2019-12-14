@@ -24,7 +24,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="textMultiLine|textNoSuggestions"
-            android:text="use RakuDroid::java::util::Vector; use RakuDroid::java::lang::Object; my $x = RakuDroid::java::util::Vector.new; my $y = $x.elementCount-field; $x.addElement(RakuDroid::java::lang::Object.new); $y ~= $x.elementCount-field; $y" />
+            android:text="use RakuDroid::android::widget::Toast; RakuDroid::android::widget::Toast::makeText($RakuDroidHelper::main-activity, 'Hello, world!', 1).show" />
 
     </LinearLayout>
 
