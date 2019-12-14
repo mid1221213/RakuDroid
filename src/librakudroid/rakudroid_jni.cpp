@@ -137,11 +137,35 @@ extern "C" char *jni_method_invoke(char *class_name, jobject obj, char *name, ch
     jvalue *jargs = args2jargs(args);
 
     switch(ret_type) {
-    case ';':
-        ret->val->L = static_cast<void *>(env->CallObjectMethodA(obj, mID, jargs));
-        break;
     case 'V':
         env->CallVoidMethodA(obj, mID, jargs);
+        break;
+    case 'Z':
+        ret->val->Z = env->CallBooleanMethodA(obj, mID, jargs) ? 1 : 0;
+        break;
+    case 'B':
+        ret->val->B = env->CallByteMethodA(obj, mID, jargs);
+        break;
+    case 'C':
+        ret->val->C = env->CallCharMethodA(obj, mID, jargs);
+        break;
+    case 'S':
+        ret->val->S = env->CallShortMethodA(obj, mID, jargs);
+        break;
+    case 'I':
+        ret->val->I = env->CallIntMethodA(obj, mID, jargs);
+        break;
+    case 'J':
+        ret->val->J = env->CallLongMethodA(obj, mID, jargs);
+        break;
+    case 'F':
+        ret->val->F = env->CallFloatMethodA(obj, mID, jargs);
+        break;
+    case 'D':
+        ret->val->D = env->CallDoubleMethodA(obj, mID, jargs);
+        break;
+    case ';':
+        ret->val->L = static_cast<void *>(env->CallObjectMethodA(obj, mID, jargs));
         break;
     default:
         printf("jni_method_invoke(): don't know what to call (yet) for '%s'!\n", sig);
@@ -185,11 +209,35 @@ extern "C" char *jni_static_method_invoke(char *class_name, char *name, char *si
     jvalue *jargs = args2jargs(args);
 
     switch(ret_type) {
+    case 'V':
+        env->CallStaticVoidMethodA(clazz, mID, jargs);
+        break;
+    case 'Z':
+        ret->val->Z = env->CallStaticBooleanMethodA(clazz, mID, jargs) ? 1 : 0;
+        break;
+    case 'B':
+        ret->val->B = env->CallStaticByteMethodA(clazz, mID, jargs);
+        break;
+    case 'C':
+        ret->val->C = env->CallStaticCharMethodA(clazz, mID, jargs);
+        break;
+    case 'S':
+        ret->val->S = env->CallStaticShortMethodA(clazz, mID, jargs);
+        break;
+    case 'I':
+        ret->val->I = env->CallStaticIntMethodA(clazz, mID, jargs);
+        break;
+    case 'J':
+        ret->val->J = env->CallStaticLongMethodA(clazz, mID, jargs);
+        break;
+    case 'F':
+        ret->val->F = env->CallStaticFloatMethodA(clazz, mID, jargs);
+        break;
+    case 'D':
+        ret->val->D = env->CallStaticDoubleMethodA(clazz, mID, jargs);
+        break;
     case ';':
         ret->val->L = static_cast<void *>(env->CallStaticObjectMethodA(clazz, mID, jargs));
-        break;
-    case 'V':
-        env->CallStaticObjectMethodA(clazz, mID, jargs);
         break;
     default:
         printf("jni_static_method_invoke(): don't know what to call (yet) for '%s'!\n", sig);
@@ -231,11 +279,32 @@ extern "C" char *jni_field_get(char *class_name, jobject obj, char *name, char *
     }
 
     switch(ret_type) {
-    case ';':
-        ret->val->L = static_cast<void *>(env->GetObjectField(obj, fID));
+    case 'Z':
+        ret->val->Z = env->GetBooleanField(obj, fID) ? 1 : 0;
+        break;
+    case 'B':
+        ret->val->B = env->GetByteField(obj, fID);
+        break;
+    case 'C':
+        ret->val->C = env->GetCharField(obj, fID);
+        break;
+    case 'S':
+        ret->val->S = env->GetShortField(obj, fID);
         break;
     case 'I':
-        ret->val->I = static_cast<int32_t>(env->GetIntField(obj, fID));
+        ret->val->I = env->GetIntField(obj, fID);
+        break;
+    case 'J':
+        ret->val->J = env->GetLongField(obj, fID);
+        break;
+    case 'F':
+        ret->val->F = env->GetFloatField(obj, fID);
+        break;
+    case 'D':
+        ret->val->D = env->GetDoubleField(obj, fID);
+        break;
+    case ';':
+        ret->val->L = static_cast<void *>(env->GetObjectField(obj, fID));
         break;
     default:
         printf("jni_field_get(): don't know what to get (yet) for '%s'!\n", sig);
@@ -275,11 +344,32 @@ extern "C" char *jni_static_field_get(char *class_name, char *name, char *sig, c
     }
 
     switch(ret_type) {
-    case ';':
-        ret->val->L = static_cast<void *>(env->GetStaticObjectField(clazz, fID));
+    case 'Z':
+        ret->val->Z = env->GetStaticBooleanField(clazz, fID) ? 1 : 0;
+        break;
+    case 'B':
+        ret->val->B = env->GetStaticByteField(clazz, fID);
+        break;
+    case 'C':
+        ret->val->C = env->GetStaticCharField(clazz, fID);
+        break;
+    case 'S':
+        ret->val->S = env->GetStaticShortField(clazz, fID);
         break;
     case 'I':
-        ret->val->I = static_cast<int32_t>(env->GetStaticIntField(clazz, fID));
+        ret->val->I = env->GetStaticIntField(clazz, fID);
+        break;
+    case 'J':
+        ret->val->J = env->GetStaticLongField(clazz, fID);
+        break;
+    case 'F':
+        ret->val->F = env->GetStaticFloatField(clazz, fID);
+        break;
+    case 'D':
+        ret->val->D = env->GetStaticDoubleField(clazz, fID);
+        break;
+    case ';':
+        ret->val->L = static_cast<void *>(env->GetStaticObjectField(clazz, fID));
         break;
     default:
         printf("jni_static_field_get(): don't know what to get (yet) for '%s'!\n", sig);
