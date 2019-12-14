@@ -52,7 +52,7 @@ CFLAGS_COM     += -I$(PREFIX_MOAR)/include/libtommath
 
 #P6_OPS_SO_DIR   = rakudo-$(RELEASE)/install/share/perl6/runtime/dynext
 #P6_OPS_SO_DIR   = rakudo/install/share/perl6/runtime/dynext
-P6_OPS_SO_DIR   = .
+P6_OPS_SO_DIR   = gen
 P6_OPS_SO       = $(P6_OPS_SO_DIR)/libperl6_ops_moar.so
 P6_OPS_SRCS     = $(RAKUDO)/src/vm/moar/ops/perl6_ops.c $(RAKUDO)/src/vm/moar/ops/container.c
 P6_OPS_CFLAGS   = $(CFLAGS_COM) -D_REENTRANT -D_FILE_OFFSET_BITS=64 -fPIC -DMVM_HEAPSNAPSHOT_FORMAT=2
@@ -135,7 +135,6 @@ check:
 	fi
 
 
-# all: $(DROID_SO) $(MOAR_SO) $(P6_OPS_SO) $(P6_LIBDIR)/RakuDroidHelper.pm6 $(P6_LIBDIR)/RakuDroidJValue.pm6 $(P6_LIBDIR)/RakuDroid.pm6 gen.touch
 all: $(DROID_SO) $(MOAR_SO) $(P6_OPS_SO) $(P6_LIBDIR)/RakuDroidHelper.pm6 gen.touch
 
 #	git clone -b $(MOAR_BRANCH) https://github.com/MoarVM/MoarVM.git $(MOAR_TARGET)
@@ -198,22 +197,21 @@ $(P6_OPS_SO): $(P6_OPS_SRCS) $(RAKUDO).touch
 	mkdir -p $(P6_OPS_SO_DIR)
 	$(CC) $(P6_OPS_CFLAGS) $(P6_OPS_LDFLAGS) -o $(P6_OPS_SO) $(P6_OPS_SRCS) $(P6_OPS_LIBS)
 
-gen.touch: android.sigs
-	rm -rf gen
-	tools/parse-api.pl android.sigs
+gen.touch: gen/android.sigs
+	tools/parse-api.pl gen/android.sigs
 	mkdir -p $(P6_LIBDIR)
 	cp -a gen/RakuDroid gen/RakuDroidRoles.pm6 $(P6_LIBDIR)/
 	touch gen.touch
 
-android.sigs:
-	rm -rf android
-	mkdir -p android
-	cd android && unzip $(ANDROID_SDK)/platforms/android-$(API_VERSION)/android.jar >/dev/null
-	rm -f android.sigs
-	find android/ -name '*.class' | xargs javap -s >>android.sigs
+gen/android.sigs:
+	rm -rf gen/android
+	mkdir -p gen/android
+	cd gen/android && unzip $(ANDROID_SDK)/platforms/android-$(API_VERSION)/android.jar >/dev/null
+	rm -f gen/android.sigs
+	find gen/android/ -name '*.class' | xargs javap -s >>gen/android.sigs
 
 clean:
-	rm -rf app gen gen.touch android android.sigs
+	rm -rf app gen gen.touch
 
 clean-all: clean
 	rm -rf $(TO_CLEAN)
