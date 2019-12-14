@@ -387,3 +387,133 @@ extern "C" char *jni_static_field_get(char *class_name, char *name, char *sig, c
 
     return strdup("OK");
 }
+
+extern "C" char *jni_field_set(char *class_name, jobject obj, char *name, char *sig, char val_type, rakujvalue_t *val)
+{
+    jclass clazz = env->FindClass(class_name);
+    if (env->ExceptionOccurred()) {
+        printf("jni_field_set(): FindClass raised exception!\n");
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+
+        return strdup("jni_field_set(): FindClass raised exception!\n");
+    }
+
+    jfieldID fID = env->GetFieldID(clazz, name, sig);
+    if (env->ExceptionOccurred()) {
+        printf("jni_field_set(): GetFieldID raised exception!\n");
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+
+        return strdup("jni_field_set(): GetFieldID raised exception!");
+    }
+
+    switch(val_type) {
+    case 'Z':
+        env->SetBooleanField(obj, fID, val->val->Z ? JNI_TRUE : JNI_FALSE);
+        break;
+    case 'B':
+        env->SetByteField(obj, fID, val->val->B);
+        break;
+    case 'C':
+        env->SetCharField(obj, fID, val->val->C);
+        break;
+    case 'S':
+        env->SetShortField(obj, fID, val->val->S);
+        break;
+    case 'I':
+        env->SetIntField(obj, fID, val->val->I);
+        break;
+    case 'J':
+        env->SetLongField(obj, fID, val->val->J);
+        break;
+    case 'F':
+        env->SetFloatField(obj, fID, val->val->F);
+        break;
+    case 'D':
+        env->SetDoubleField(obj, fID, val->val->D);
+        break;
+    case ';':
+        env->SetObjectField(obj, fID, static_cast<jobject>(val->val->L));
+        break;
+    default:
+        printf("jni_field_set(): don't know what to set (yet) for '%s'!\n", sig);
+        return strdup("jni_field_set(): don't know what to set (yet) for '%s'!");
+        break;
+    }
+
+    if (env->ExceptionOccurred()) {
+        printf("jni_field_set(): Set*Field raised exception!\n");
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+
+        return strdup("jni_field_set(): Set*Field raised exception!");
+    }
+
+    return strdup("OK");
+}
+
+extern "C" char *jni_static_field_set(char *class_name, char *name, char *sig, char val_type, rakujvalue_t *val)
+{
+    jclass clazz = env->FindClass(class_name);
+    if (env->ExceptionOccurred()) {
+        printf("jni_static_field_set(): FindClass raised exception!\n");
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+
+        return strdup("jni_static_field_set(): FindClass raised exception!\n");
+    }
+
+    jfieldID fID = env->GetFieldID(clazz, name, sig);
+    if (env->ExceptionOccurred()) {
+        printf("jni_static_field_set(): GetFieldID raised exception!\n");
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+
+        return strdup("jni_static_field_set(): GetFieldID raised exception!");
+    }
+
+    switch(val_type) {
+    case 'Z':
+        env->SetStaticBooleanField(clazz, fID, val->val->Z ? JNI_TRUE : JNI_FALSE);
+        break;
+    case 'B':
+        env->SetStaticByteField(clazz, fID, val->val->B);
+        break;
+    case 'C':
+        env->SetStaticCharField(clazz, fID, val->val->C);
+        break;
+    case 'S':
+        env->SetStaticShortField(clazz, fID, val->val->S);
+        break;
+    case 'I':
+        env->SetStaticIntField(clazz, fID, val->val->I);
+        break;
+    case 'J':
+        env->SetStaticLongField(clazz, fID, val->val->J);
+        break;
+    case 'F':
+        env->SetStaticFloatField(clazz, fID, val->val->F);
+        break;
+    case 'D':
+        env->SetStaticDoubleField(clazz, fID, val->val->D);
+        break;
+    case ';':
+        env->SetStaticObjectField(clazz, fID, static_cast<jobject>(val->val->L));
+        break;
+    default:
+        printf("jni_static_field_set(): don't know what to set (yet) for '%s'!\n", sig);
+        return strdup("jni_static_field_set(): don't know what to set (yet) for '%s'!");
+        break;
+    }
+
+    if (env->ExceptionOccurred()) {
+        printf("jni_static_field_set(): SetStatic*Field raised exception!\n");
+        env->ExceptionDescribe();
+        env->ExceptionClear();
+
+        return strdup("jni_static_field_set(): SetStatic*Field raised exception!");
+    }
+
+    return strdup("OK");
+}

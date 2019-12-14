@@ -28,5 +28,7 @@ extern char *jni_method_invoke(       char *class_name, jobject obj, char *name,
 extern char *jni_static_method_invoke(char *class_name,              char *name, char *sig, rakujvalue_t **args, char ret_type, rakujvalue_t *ret);
 extern char *jni_field_get(           char *class_name, jobject obj, char *name, char *sig,                      char ret_type, rakujvalue_t *ret);
 extern char *jni_static_field_get(    char *class_name,              char *name, char *sig,                      char ret_type, rakujvalue_t *ret);
+extern char *jni_field_set(           char *class_name, jobject obj, char *name, char *sig,                      char val_type, rakujvalue_t *val);
+extern char *jni_static_field_set(    char *class_name,              char *name, char *sig,                      char val_type, rakujvalue_t *val);
 
 #endif // _RAKUDROID_JNI_H_

@@ -29,6 +29,8 @@ sub method_invoke(       Str, Pointer, Str, Str, CArray[RakuDroidJValue], Str, R
 sub static_method_invoke(Str,          Str, Str, CArray[RakuDroidJValue], Str, RakuDroidJValue is rw --> Str) is native('rakudroid') { * }
 sub field_get(           Str, Pointer, Str, Str,                          Str, RakuDroidJValue is rw --> Str) is native('rakudroid') { * }
 sub static_field_get(    Str,          Str, Str,                          Str, RakuDroidJValue is rw --> Str) is native('rakudroid') { * }
+sub field_set(           Str, Pointer, Str, Str,                          Str, RakuDroidJValue       --> Str) is native('rakudroid') { * }
+sub static_field_set(    Str,          Str, Str,                          Str, RakuDroidJValue       --> Str) is native('rakudroid') { * }
 
 sub helper_eval(Str $code --> Str(Any))
 {
@@ -187,4 +189,16 @@ our sub static-field-get($rd, Str $name, Str $sig)
 #    die $err if $err;
 
     return common-invoke-post($ret-type, $ret, $real-ret-type);
+}
+
+our sub field-set($rd, $obj, Str $name, Str $sig, $val)
+{
+    my $err = field_set($rd.class-name, $obj.j-obj, $name, $sig, substr($sig, *-1), $val);
+#    die $err if $err;
+}
+
+our sub static-field-set($rd, Str $name, Str $sig, $val)
+{
+    my $err = static_field_get($rd.class-name, $name, $sig, substr($sig, *-1), $val);
+#    die $err if $err;
 }

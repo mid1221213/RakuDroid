@@ -348,6 +348,18 @@ char *static_field_get(char *class_name, char *name, char *sig, char *ret_type, 
     return jni_static_field_get(class_name, name, sig, ret_type[0], ret);
 }
 
+char *field_set(char *class_name, jobject obj, char *name, char *sig, char *val_type, rakujvalue_t *val)
+{
+    printf("field_set(class_name='%s', obj='%p', name='%s', sig='%s', val_type=%c, val=%p\n", class_name, obj, name, sig, val_type[0], val);
+    return jni_field_set(class_name, obj, name, sig, val_type[0], val);
+}
+
+char *static_field_set(char *class_name, char *name, char *sig, char *val_type, rakujvalue_t *val)
+{
+    printf("static_field_set(class_name='%s', name='%s', sig='%s', val_type=%c, val=%p\n", class_name, name, sig, val_type[0], val);
+    return jni_static_field_set(class_name, name, sig, val_type[0], val);
+}
+
 #define PRINT_EVAL(str) { char *ret = rakudo_eval(str); printf("« " str " » = %s%s\n", ok ? "" : "[NOK] → ", ret); free(ret); }
 
 void start(void)
