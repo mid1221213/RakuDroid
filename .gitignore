@@ -1,7 +1,7 @@
 app
 *.tgz
 MoarVM-*
-rakudo*
+rakudo-*
 gen
 gen.touch
 install

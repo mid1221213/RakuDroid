@@ -3,7 +3,7 @@
 ARCH           ?= x86_64
 API_VERSION    ?= 26
 ANDROID_SDK    ?= ${HOME}/Android/Sdk
-RELEASE        ?= 2019.07.1
+RELEASE        ?= 2019.11
 DBG_CFLAGS     ?= -g -O0
 
 PROJ_JAVA_PATH ?= com/example/myapplication
@@ -24,12 +24,12 @@ else
 $(error ARCH=$(ARCH) unknown, must be one of: $(ARCHS))
 endif
 
-RAKUDO          = rakudo
-#RAKUDO          = rakudo-$(RELEASE)
-#MOAR_BRANCH     = $(RELEASE)
-MOAR_BRANCH     = 2019.07.1
-RAKUDO_DL       = https://github.com/rakudo/rakudo/archive/master.zip
-#RAKUDO_DL       = https://github.com/rakudo/rakudo/releases/download/$(RELEASE)/$(RAKUDO).tar.gz
+RAKUDO          = rakudo-$(RELEASE)
+RAKUDO_DL       = https://github.com/rakudo/rakudo/releases/download/$(RELEASE)/$(RAKUDO).tar.gz
+
+MOAR            = MoarVM-$(RELEASE)
+MOAR_DL         = https://github.com/MoarVM/MoarVM/releases/download/$(RELEASE)/$(MOAR).tar.gz
+MOAR_TARGET     = MoarVM-$(RELEASE)-$(ARCH)-linux-android$(API_VERSION)
 
 BUILD_ARCH      = x86_64-pc-linux-gnu
 TARGET_ARCH     = $(ARCH)-linux-android$(API_VERSION)
@@ -39,7 +39,6 @@ ANDROID_NDK_BIN = $(ANDROID_NDK)/toolchains/llvm/prebuilt/linux-x86_64/bin
 ANDROID_SDK_PLT = $(ANDROID_SDK)/platform-tools
 CC              = $(ANDROID_NDK_BIN)/$(ARCH)-linux-android$(API_VERSION)-clang
 ADB             = $(ANDROID_SDK)/platform-tools/adb
-MOAR_TARGET     = MoarVM-$(ARCH)-linux-android$(API_VERSION)
 
 PREFIX_MOAR     = $(MOAR_TARGET)/install
 
@@ -50,8 +49,6 @@ CFLAGS_COM     += -I$(PREFIX_MOAR)/include/libatomic_ops
 CFLAGS_COM     += -I$(PREFIX_MOAR)/include/dyncall
 CFLAGS_COM     += -I$(PREFIX_MOAR)/include/libtommath
 
-#P6_OPS_SO_DIR   = rakudo-$(RELEASE)/install/share/perl6/runtime/dynext
-#P6_OPS_SO_DIR   = rakudo/install/share/perl6/runtime/dynext
 P6_OPS_SO_DIR   = gen
 P6_OPS_SO       = $(P6_OPS_SO_DIR)/libperl6_ops_moar.so
 P6_OPS_SRCS     = $(RAKUDO)/src/vm/moar/ops/perl6_ops.c $(RAKUDO)/src/vm/moar/ops/container.c
@@ -83,7 +80,7 @@ DROID_LDFLAGS   = -shared -Wl,-e,start
 
 DROID_LIBS      = -L$(PREFIX_MOAR)/lib -lmoar -L$(ANDROID_NDK)/platforms/android-$(API_VERSION)/$(SDK_ARCH)/usr/lib -llog
 
-TO_CLEAN        = $(RAKUDO)* MoarVM* MyApplication.tgz
+TO_CLEAN        = $(shell cat .gitignore) # hohoho
 
 export PATH    := $(ANDROID_NDK_BIN):$(ANDROID_SDK_PLT):${PATH}
 SHELL           = /bin/bash
@@ -137,10 +134,8 @@ check:
 
 all: $(DROID_SO) $(MOAR_SO) $(P6_OPS_SO) $(P6_LIBDIR)/RakuDroidHelper.pm6 gen.touch
 
-#	git clone -b $(MOAR_BRANCH) https://github.com/MoarVM/MoarVM.git $(MOAR_TARGET)
 $(MOAR_TARGET).touch:
-	rm -rf $(MOAR_TARGET)
-	git clone https://github.com/MoarVM/MoarVM.git $(MOAR_TARGET)
+	git clone -b $(RELEASE) "https://github.com/MoarVM/MoarVM.git" $(MOAR_TARGET)
 	cd $(MOAR_TARGET) && \
 		git submodule sync --quiet && git submodule --quiet update --init && \
 		git am ../src/librakudroid/0001-Make-MoarVM-cross-compile-nicely-for-Android.patch && \
@@ -155,37 +150,19 @@ $(MOAR_SO): $(PREFIX_MOAR)/lib/libmoar.so
 	mkdir -p $(DROID_SO_DIR)
 	cp -a $(PREFIX_MOAR)/lib/libmoar.so $(MOAR_SO)
 
-# $(RAKUDO).touch: $(RAKUDO)
-# 	cd $(RAKUDO) && \
-# 		git submodule sync --quiet && git submodule --quiet update --init && \
-# 		MAKEFLAGS="-j" perl Configure.pl --gen-nqp --gen-moar --backends=moar --make-install --relocatable
-# 	touch $(RAKUDO).touch
-
-# $(RAKUDO).tar.gz:
-# 	wget $(RAKUDO_DL) -O $(RAKUDO).zip
-
 $(RAKUDO).touch:
 	rm -rf $(RAKUDO)
-	git clone https://github.com/rakudo/rakudo.git $(RAKUDO)
+	git clone -b $(RELEASE) "https://github.com/rakudo/rakudo.git" $(RAKUDO)
 	cd $(RAKUDO) && \
 		git submodule sync --quiet && git submodule --quiet update --init && \
 		MAKEFLAGS="-j" perl Configure.pl --gen-nqp --gen-moar --backends=moar --make-install --relocatable
 	touch $(RAKUDO).touch
-
-# $(RAKUDO): $(RAKUDO).tar.gz
-# 	tar -xzf $(RAKUDO).tar.gz
 
 $(P6_LIBDIR):
 	mkdir -p $(P6_LIBDIR)
 
 $(P6_LIBDIR)/RakuDroidHelper.pm6: $(P6_LIBDIR) src/librakudroid/RakuDroidHelper.pm6
 	cp -a src/librakudroid/RakuDroidHelper.pm6 $(P6_LIBDIR)/
-
-# $(P6_LIBDIR)/RakuDroidJValue.pm6: $(P6_LIBDIR) src/librakudroid/RakuDroidJValue.pm6
-# 	cp -a src/librakudroid/RakuDroidJValue.pm6 $(P6_LIBDIR)/
-
-# $(P6_LIBDIR)/RakuDroid.pm6: $(P6_LIBDIR) src/librakudroid/RakuDroid.pm6
-# 	cp -a src/librakudroid/RakuDroid.pm6 $(P6_LIBDIR)/
 
 $(DROID_SO): $(DROID_SRCS) $(DROID_HDRS) $(RAKUDO).touch $(MOAR_TARGET).touch
 	mkdir -p $(DROID_SO_DIR)
@@ -214,7 +191,7 @@ gen/android.sigs:
 clean:
 	rm -rf app gen gen.touch
 
-clean-all: clean
+clean-all:
 	rm -rf $(TO_CLEAN)
 
 install-pre: all
@@ -231,10 +208,10 @@ install-pre: all
 	mkdir -p $(DROID_PREFIX)/res/layout
 	cp -a src/AndroidStudio/activity_main.xml $(DROID_PREFIX)/res/layout/
 	mkdir -p app/src/main/assets/rakudroid/share
-	cp -a rakudo/install/share/perl6 app/src/main/assets/rakudroid/share/
+	cp -a $(RAKUDO)/install/share/perl6 app/src/main/assets/rakudroid/share/
 	mkdir -p app/src/main/assets/rakudroid/share/perl6/runtime/dynext
 	cp -a $(P6_OPS_SO) app/src/main/assets/rakudroid/share/perl6/runtime/dynext/
-	cp -a rakudo/install/share/nqp app/src/main/assets/rakudroid/share/
+	cp -a $(RAKUDO)/install/share/nqp app/src/main/assets/rakudroid/share/
 
 install-post:
 	tar -czf MyApplication.tgz app
@@ -246,7 +223,8 @@ install: install-pre install-precompiled install-post
 precomp:
 	rm -rf install
 	mkdir -p install/share/perl6/vendor
-	rakudo/install/bin/perl6 tools/install-vendor.p6 install/share/perl6/vendor
+	@echo "Next step takes a long time, please wait…"
+	$(RAKUDO)/install/bin/perl6 tools/install-vendor.p6 install/share/perl6/vendor
 
 install-precomp: install-pre precomp install-precompiled install-post
 
