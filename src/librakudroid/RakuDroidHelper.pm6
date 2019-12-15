@@ -199,6 +199,6 @@ our sub field-set($rd, $obj, Str $name, Str $sig, $val)
 
 our sub static-field-set($rd, Str $name, Str $sig, $val)
 {
-    my $err = static_field_get($rd.class-name, $name, $sig, substr($sig, *-1), $val);
+    my $err = static_field_set($rd.class-name, $name, $sig, substr($sig, *-1), $val);
     die $err if $err;
 }
