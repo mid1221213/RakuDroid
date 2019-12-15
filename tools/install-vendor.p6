@@ -1,7 +1,7 @@
 use lib <rakudo/lib>;
 use CompUnit::Repository::Staging;
 
-my %provides = 'gen/provides'.IO.lines.split(/\s/);
+my %provides = 'tools/provides'.IO.lines.split(/\s+/);
 
 PROCESS::<$REPO> := CompUnit::Repository::Staging.new(
     :prefix(@*ARGS[0]),

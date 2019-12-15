@@ -262,10 +262,6 @@ $classes{$cur_class}{uses}  = [ keys %seen_uses ]  if $cur_class ne '';
 $classes{$cur_class}{ruses} = [ keys %seen_ruses ] if $cur_class ne '';
 
 mkdirs('gen/provides');
-open(OUTPROVS, '>', "gen/provides") or die $!;
-say OUTPROVS "RakuDroid src/librakudroid/RakuDroid.pm6";
-say OUTPROVS "RakuDroidJValue src/librakudroid/RakuDroidJValue.pm6";
-say OUTPROVS "RakuDroidRoles gen/RakuDroidRoles.pm6";
 
 my %role_deps = (
     text => {},
@@ -282,8 +278,6 @@ foreach my $class (keys %classes) {
     $n_class =~ s,/,::,g;
     my $role = $n_class;
     $role =~ s/::/Role::/;
-
-#    say OUTPROVS "$n_class gen/$path.pm6";
 
     $role_deps{text}{$role} = "role $role {
 ";
@@ -463,4 +457,3 @@ foreach my $role (sort keys %{$role_deps{text}}) {
 }
 
 close(OUTROLE);
-close(OUTPROVS);
