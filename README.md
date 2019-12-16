@@ -34,7 +34,7 @@ To first check if everything seems to be OK, and look at customizable variables:
 
 To build:
 
-	make install
+	make install-precomp
 
 To specify a different arch than the default (which is x86_64):
 
@@ -58,33 +58,37 @@ PROJ_JAVA_PATH ?= com/example/myapplication
 These targets usable with `make`:
 * `help` (default): displays the file you're currently reading (`README.md`)
 * `check`: makes somes sanity checks about configuration and variables. Tests `adb` availability, NDK's cross compiler availability, presence and arch of connected device, etc… It also prints the variables actual values (so you can customize them when calling `make check`)
-* `clean`: cleans up RakuDroid target directory (`app`)
-* `clean-all`: cleans up everything and the directory final structure should become the one you freshly installed
+* `clean`: cleans up RakuDroid target directory (`app`) and generated files (`gen` & `gen.touch`)
+* `clean-all`: cleans up everything and the resulting directory structure should become the one you freshly installed
 * `clean-arch`: cleans up what needs to be rebuilt for a different arch (to switch between them)
 * `all`: builds everything
 * `install`: make a `gzip`'ed tarball of the complete `app` directory with all needed files in it. You can actually use this target directly after `make check` to build everything
+* `install-precomp`: like `make install` but does the precompilation phase. **You must use this target the first time, and only once**. Unless you modify the files precompiled, you should only need to `make install` afterwards, e.g. when changing arch
 
 ## Building process explained
 
 MoarVM is arch dependant.
 
-Rakudo is not completely arch independant. There is (for what we need) one shared library that is built with it: `dynext/libperl6_ops_moar.so`. That `dynext/` part is a bit annoying because it prevents the library to be installed in `jniLibs/$(JNI_ARCH)/` like the others because the Android system does not support subdirectories in that directory. We are then obliged to install it elsewhere.
+Rakudo is not completely arch independant. There is (for what we need) one shared library that is built with it: `dynext/libperl6_ops_moar.so`. That `dynext/` part is a bit annoying because it prevents the library to be installed in `jniLibs/$(JNI_ARCH)/` like the others because the Android system does not support subdirectories in that directory. We are then obliged to install it elsewhere. It also prevents the use of multi-arch building in Android Studio. This is why you must, when changing the arch, issue a `make clean-arch` then, after having switched the connected device, rebuild with `make install`.
 
-When building the following occurs:
+When building the following occurs (in an order decided by `make`):
 * Rakudo is "`git clone`'d" from github at the release specified in the `RELEASE` variable. It is then built with no special processing, as it would be built for the host (it is)
 * MoarVM is "`git-clone`'d" from github at the release specified in the same `RELEASE` variable. It is then patched to allow cross compiling for Android. It is at this very moment that the device (be it a real device or an emulator) is used. Only **one** device should be connected and reachable with `adb`
-* `libperl6_ops_moar.so` is then cross compiled using the source in Rakudo
-* Finally, `librakudroid.so` is cross compiled from source in `src/librakudroid/`
+* `libperl6_ops_moar.so` is cross compiled using the source in Rakudo
+* `librakudroid.so` is cross compiled from the source in `src/librakudroid/`
+* The file `android.jar` is extracted, then `javap` is used on it to extract the class definitions and signatures. The resulting file is then parsed (using an ugly Perl 5 script that should be rewritten in Raku, especially for the regexes ;-)) to generate the bindings
+* If you typed a `make install-precomp`, there is a precompilation phase. Most RakuDroid modules are precompiled, and some generated bindings (the ones needed for startup, i.e. `Activity.pm6` and its dependencies), along with the big sized `RakuDroidRoles.pm6`
+* As a final step, the `app` directory is created and populated, then `tar.gz`-ipped
 
 ## Installation and test
 
 As said before, this is a PoC. It is actually the second one.
 
-The first goal was to have an Android application that, when launched, displays a kind or REPL. You entered the expression to eval, then clicked on "Eval", and the result (returned value) was displayed. The button "Extract Assets" was here in case the asset extraction has been interrupted at the beginning (should not happen, and this button is actually useless). Be careful, the evaluation step of REPL is done independantly each time. That means that a "my" variable is lost between evaluations. An "our" variable is kept, but you need to use it with the special package name `RakuDroidHelper`, e.g. `$RakuDroidHelper::my-var` at 2nd and forth times.
+The first goal was to have an Android application that, when launched, displays a kind or REPL. You entered the expression to eval, then clicked on "Eval", and the result (returned value) was displayed. The button "Extract Assets" was here in case the asset extraction has been interrupted at the beginning (should not happen, and this button is actually useless). Be careful, the evaluation step of REPL is done independantly each time. That means that a "`my`" variable is lost between evaluations. An "`our`" variable is kept, but you need to use it with the special package name `RakuDroidHelper`, e.g. `$RakuDroidHelper::my-var` at 2nd and forth times.
 
 This is the second version of the PoC. It brings the Android system bindings. The variable `$RakuDroidHelper::main-activity` holds the activity object displayed and you can use the pre-filled text just by clicking "Eval" to display an Android Toast. More info will be given later in a separate file on how bindings are done and their use.
 
-Once you have successfully `make install`'ed (that takes about 5mn on my host), you should end up with a file `MyApplication.tgz`. Launch Android Studio, select « New Project » and use the `Native C++` activity template. Keep the default settings (especially the ID of the application `com.example.myapplication`, or else overwrite the `PROJ_JAVA_PATH` variable), except for Android version to use, it should be **at least** Oreo (8.0).
+Once you have successfully `make install-precomp`'ed (that takes about 7mn on my machine), you should end up with a file `MyApplication.tgz`. Launch Android Studio, select « New Project » and use the `Native C++` activity template. Keep the default settings (especially the ID of the application `com.example.myapplication`, or else overwrite the `PROJ_JAVA_PATH` variable), except for Android version to use, it should be **at least** Oreo (8.0).
 
 Once this is done, in a shell, `cd` to the new application directory (which should be, using all defaults, `${HOME}/AndroidStudioProjects/MyApplication/`), then issue a `tar -xzvf /path/to/RakuDroid/MyApplication.tgz`.
 
