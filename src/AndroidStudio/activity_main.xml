@@ -23,8 +23,8 @@
             android:id="@+id/input_text"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="text|textNoSuggestions"
-            android:text="sqrt(3²+4²)" />
+            android:inputType="textMultiLine|textNoSuggestions"
+            android:text="use RakuDroid::android::widget::Toast; RakuDroid::android::widget::Toast::makeText($RakuDroidHelper::main-activity, 'Hello, world!', 1).show" />
 
     </LinearLayout>
 

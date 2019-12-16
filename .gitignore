@@ -2,3 +2,5 @@ app
 *.tgz
 MoarVM-*
 rakudo-*
+gen
+gen.touch

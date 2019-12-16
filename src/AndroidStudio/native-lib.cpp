@@ -4,46 +4,72 @@
 extern "C" {
 #include <android/log.h>
 #include "rakudroid.h"
+#include "rakudroid_jni.h"
 }
 
 #include <cstdlib>
 #include <unistd.h>
 
-//#define printf(...) __android_log_print(ANDROID_LOG_DEBUG, "RAKU", __VA_ARGS__);
+#define printf(...) __android_log_print(ANDROID_LOG_DEBUG, "RAKUUUUUUUUUUUUUUUUU", __VA_ARGS__);
 
 int64_t ok = 0;
+jobject myApp = nullptr;
+jobject myActivity = nullptr;
+
+static JNIEnv *env;
 
 extern "C" JNIEXPORT void JNICALL
 Java_com_example_myapplication_MyApplication_rakuInit(
-        JNIEnv* env,
-        jobject /* this */,
+        JNIEnv* envParam,
+        jobject zis,
         jstring appDir) {
+
+    env = envParam;
+    jni_init_env(env);
+
+    myApp = env->NewGlobalRef(zis);
 
     const char *c_dir = env->GetStringUTFChars(appDir, nullptr);
     chdir(c_dir);
+    setenv("HOME", c_dir, 1);
     env->ReleaseStringUTFChars(appDir, c_dir);
 
-    char buf[256];
-
-    setenv("HOME", getcwd(buf, sizeof(buf)), 1);
     rakudo_init(0, 0, nullptr, &ok);
 }
 
 extern "C" JNIEXPORT jstring JNICALL
 Java_com_example_myapplication_MainActivity_rakuEval(
-        JNIEnv* env,
-        jobject /* this */,
+        JNIEnv* /* env */,
+        jobject zis,
         jstring toEval) {
 
-    const char *evalMe = env->GetStringUTFChars(toEval, nullptr);
+    char *ret_str;
+    const char *evalMe;
 
-    char *eval = rakudo_eval(const_cast<char *>(evalMe));
+    ok = 0;
+
+    if (!myActivity) {
+        myActivity = env->NewGlobalRef(zis);
+
+        ret_str = rakudo_init_activity(static_cast<void *>(myActivity));
+        if (!ok) {
+            printf("Activity setup failed: %s\n", ret_str);
+            goto end;
+        }
+        free(ret_str);
+    }
+
+    evalMe = env->GetStringUTFChars(toEval, nullptr);
+
+    ret_str = rakudo_eval(const_cast<char *>(evalMe));
 
     env->ReleaseStringUTFChars(toEval, evalMe);
 
-    auto ret = env->NewStringUTF(ok ? eval : "NOK");
+end:
+//    auto ret = env->NewStringUTF(ok ? ret_str : "NOK");
+    auto ret = env->NewStringUTF(ret_str);
 
-    free(eval);
+    free(ret_str);
 
     return ret;
 }

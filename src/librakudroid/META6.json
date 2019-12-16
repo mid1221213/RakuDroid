@@ -1,0 +1,26 @@
+{
+    "name"          : "RakuDroid",
+    "version"       : "0.01",
+    "perl"          : "6.d",
+    "auth"          : "github:mid1221213",
+    "authors"       : [ "Alexandre Jousset" ],
+    "description"   : "Modules needed by RakuDroid + Android bindings",
+    "depends"       : [ ],
+    "test-depends"  : [ ],
+    "provides"      : {
+	"RakuDroid":                                     "RakuDroid.pm6",
+	"RakuDroidJValue":                               "RakuDroidJValue.pm6",
+	"RakuDroidRoles":                                "RakuDroidRoles.pm6",
+	"RakuDroid::android::app::Activity":             "RakuDroid/android/app/Activity.pm6",
+	"RakuDroid::android::view::ContextThemeWrapper": "RakuDroid/android/view/ContextThemeWrapper.pm6",
+	"RakuDroid::android::content::ContextWrapper":   "RakuDroid/android/content/ContextWrapper.pm6",
+	"RakuDroid::android::content::Context":          "RakuDroid/android/content/Context.pm6"
+    },
+    "resources"     : [ ],
+    "repo-type"     : "git",
+    "source-url"    : "git://github.com/mid1221213/RakuDroid.git",
+    "license"       : "Artistic-2.0",
+    "support"       : {
+        "irc" : "irc://irc.freenode.org/#raku"
+    }
+}
