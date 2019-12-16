@@ -90,7 +90,7 @@ none:
 	@echo Hmmm… I don\'t know what to make, and you neither… try \"make help\" or read README.md \(same thing\)
 
 help:
-	@cat README.md
+	@less README.md
 
 check:
 	@echo supported architectures: $(ARCHS)
