@@ -71,8 +71,8 @@ MoarVM is arch dependant.
 Rakudo is not completely arch independant. There is (for what we need) one shared library that is built with it: `dynext/libperl6_ops_moar.so`. That `dynext/` part is a bit annoying because it prevents the library to be installed in `jniLibs/$(JNI_ARCH)/` like the others because the Android system does not support subdirectories in that directory. We are then obliged to install it elsewhere.
 
 When building the following occurs:
-* Rakudo is "`git clone`'ed" from github at the release specified in the `RELEASE` variable. It is then built with no special processing, as it would be built for the host (it is)
-* MoarVM is "`git-clon`'ed" from github at the release specified in the same `RELEASE` variable. It is then patched to allow cross compiling for Android. It is at this very moment that the device (be it a real device or an emulator) is used. Only **one** device should be connected and reachable with `adb`
+* Rakudo is "`git clone`'d" from github at the release specified in the `RELEASE` variable. It is then built with no special processing, as it would be built for the host (it is)
+* MoarVM is "`git-clone`'d" from github at the release specified in the same `RELEASE` variable. It is then patched to allow cross compiling for Android. It is at this very moment that the device (be it a real device or an emulator) is used. Only **one** device should be connected and reachable with `adb`
 * `libperl6_ops_moar.so` is then cross compiled using the source in Rakudo
 * Finally, `librakudroid.so` is cross compiled from source in `src/librakudroid/`
 
