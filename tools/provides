@@ -1,7 +1,0 @@
-RakuDroid                                     src/librakudroid/RakuDroid.pm6
-RakuDroidJValue                               src/librakudroid/RakuDroidJValue.pm6
-RakuDroidRoles                                gen/RakuDroidRoles.pm6
-RakuDroid::android::app::Activity             gen/RakuDroid/android/app/Activity.pm6
-RakuDroid::android::view::ContextThemeWrapper gen/RakuDroid/android/view/ContextThemeWrapper.pm6
-RakuDroid::android::content::ContextWrapper   gen/RakuDroid/android/content/ContextWrapper.pm6
-RakuDroid::android::content::Context          gen/RakuDroid/android/content/Context.pm6

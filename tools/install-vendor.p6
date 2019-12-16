@@ -1,4 +1,3 @@
-use lib <rakudo/lib>;
 use CompUnit::Repository::Staging;
 
 my %provides = 'tools/provides'.IO.lines.split(/\s+/);
@@ -9,7 +8,7 @@ PROCESS::<$REPO> := CompUnit::Repository::Staging.new(
         # Make CompUnit::Repository::Staging available to precomp processes
         CompUnit::Repository::Installation.new(
             :prefix(@*ARGS[0]),
-            :next-repo(CompUnit::RepositoryRegistry.repository-for-name('core')),
+            :next-repo(CompUnit::RepositoryRegistry.repository-for-name('vendor')),
         )
     ),
     :name('vendor'),
@@ -26,7 +25,3 @@ $*REPO.install(
     ),
     :force,
 );
-
-note "installed!";
-
-# vim: ft=perl6

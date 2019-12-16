@@ -66,7 +66,6 @@ DROID_SO_NAME   = librakudroid.so
 DROID_SO        = $(DROID_SO_DIR)/$(DROID_SO_NAME)
 MOAR_SO         = $(DROID_SO_DIR)/libmoar.so
 
-#P6_LIBDIR       = $(DROID_PREFIX)/assets/rakudroid/share/perl6/vendor
 P6_LIBDIR       = $(DROID_PREFIX)/assets/rakudroid/lib
 
 DROID_DEFINES   = -DSTATIC_NQP_HOME="/rakudroid/share/nqp"
@@ -174,11 +173,14 @@ $(P6_OPS_SO): $(P6_OPS_SRCS) $(RAKUDO).touch
 	mkdir -p $(P6_OPS_SO_DIR)
 	$(CC) $(P6_OPS_CFLAGS) $(P6_OPS_LDFLAGS) -o $(P6_OPS_SO) $(P6_OPS_SRCS) $(P6_OPS_LIBS)
 
-#	cp -a gen/RakuDroid gen/RakuDroidRoles.pm6 $(P6_LIBDIR)/
 gen.touch: gen/android.sigs
 	tools/parse-api.pl gen/android.sigs
 	mkdir -p $(P6_LIBDIR)
 	cp -a gen/RakuDroid $(P6_LIBDIR)/
+	rm -f $(P6_LIBDIR)/RakuDroid/android/app/Activity.pm6
+	rm -f $(P6_LIBDIR)/RakuDroid/android/view/ContextThemeWrapper.pm6
+	rm -f $(P6_LIBDIR)/RakuDroid/android/content/ContextWrapper.pm6
+	rm -f $(P6_LIBDIR)/RakuDroid/android/content/Context.pm6
 	touch gen.touch
 
 gen/android.sigs:
@@ -191,10 +193,13 @@ gen/android.sigs:
 clean:
 	rm -rf app gen gen.touch
 
+clean-arch:
+	rm -rf gen.touch gen/libperl6_ops_moar.so
+
 clean-all:
 	rm -rf $(TO_CLEAN)
 
-install-pre: all
+install: all
 	mkdir -p app
 	sed -e s/%%ARCH_JNI%%/$(JNI_ARCH)/ src/AndroidStudio/build.gradle.in >app/build.gradle
 	mkdir -p $(DROID_PREFIX)/java/$(PROJ_JAVA_PATH)
@@ -212,25 +217,13 @@ install-pre: all
 	mkdir -p app/src/main/assets/rakudroid/share/perl6/runtime/dynext
 	cp -a $(P6_OPS_SO) app/src/main/assets/rakudroid/share/perl6/runtime/dynext/
 	cp -a $(RAKUDO)/install/share/nqp app/src/main/assets/rakudroid/share/
-
-install-post:
 	tar -czf MyApplication.tgz app
 	@echo
 	@echo Ok, now go to your Android project\'s root directory \(where the directory \'app\' resides\) and do \'tar -xzvf `pwd`/MyApplication.tgz\'
 
-install: install-pre install-precompiled install-post
-
 precomp:
-	rm -rf install
-	mkdir -p install/share/perl6/vendor
+	cp -af src/librakudroid/*.pm6 src/librakudroid/META6.json gen/
 	@echo "Next step takes a long time, please wait…"
-	$(RAKUDO)/install/bin/perl6 tools/install-vendor.p6 install/share/perl6/vendor
+	RAKUDO_RERESOLVE_DEPENDENCIES=0 $(RAKUDO)/install/bin/perl6 $(RAKUDO)/tools/install-dist.p6 --from=gen
 
-install-precomp: install-pre precomp install-precompiled install-post
-
-install-precompiled:
-	rm -rf app/src/main/assets/rakudroid/share/perl6/vendor
-	cp -a install/share/perl6/vendor app/src/main/assets/rakudroid/share/perl6/
-
-clean-arch:
-	rm -rf gen/android.sigs gen/libperl6_ops_moar.so
+install-precomp: precomp install
