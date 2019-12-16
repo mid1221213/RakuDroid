@@ -25,10 +25,8 @@ $(error ARCH=$(ARCH) unknown, must be one of: $(ARCHS))
 endif
 
 RAKUDO          = rakudo-$(RELEASE)
-RAKUDO_DL       = https://github.com/rakudo/rakudo/releases/download/$(RELEASE)/$(RAKUDO).tar.gz
 
 MOAR            = MoarVM-$(RELEASE)
-MOAR_DL         = https://github.com/MoarVM/MoarVM/releases/download/$(RELEASE)/$(MOAR).tar.gz
 MOAR_TARGET     = MoarVM-$(RELEASE)-$(ARCH)-linux-android$(API_VERSION)
 
 BUILD_ARCH      = x86_64-pc-linux-gnu
@@ -122,9 +120,6 @@ check:
 		echo cross-compiler found in $(CC); \
 	else \
 		echo cross-compiler not found in $(CC) && false; \
-	fi
-	@if [[ `which wget >/dev/null 2>&1` ]]; then \
-		echo \'wget\' not found in PATH && false; \
 	fi
 	@if [[ `which git >/dev/null 2>&1` ]]; then \
 		echo \'git\' not found in PATH && false; \
