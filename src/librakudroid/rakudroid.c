@@ -243,8 +243,8 @@ void rakudo_init(int from_main, int argc, char *argv[], int64_t *main_ok)
 
     /* start_logger(); */
 
-    /* close(2); */
-    /* open("/data/data/com.example.myapplication/files/stderr", O_APPEND | O_CREAT | O_WRONLY); */
+    close(2);
+    open("/data/data/com.example.myapplication/files/stderr", O_APPEND | O_CREAT | O_WRONLY);
 //    setenv("RAKUDO_MAX_THREADS", "2", 1);
     setenv("RAKUDO_MODULE_DEBUG", "1", 1);
 
