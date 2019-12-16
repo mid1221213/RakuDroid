@@ -80,7 +80,7 @@ When building the following occurs:
 
 As said before, this is a PoC. It is actually the second one.
 
-The first goal was to have an Android application that, when launched, displays a kind or REPL. You entered the expression to eval, then clicked on "Eval", and the result (returned value) was displayed. The button "Extract Assets" was here in case the asset extraction has been interrupted at the beginning (should not happen, and this button is actually useless). Be careful, the evaluation step of REPL is done independantly each time. That means that a "my" variable is lost between evaluations. An "our" variable is kept, but you need to use it with the special package name `RakuDroidHelper`, e.g. `$KaruDroindHelper::my-var` at 2nd and forth times.
+The first goal was to have an Android application that, when launched, displays a kind or REPL. You entered the expression to eval, then clicked on "Eval", and the result (returned value) was displayed. The button "Extract Assets" was here in case the asset extraction has been interrupted at the beginning (should not happen, and this button is actually useless). Be careful, the evaluation step of REPL is done independantly each time. That means that a "my" variable is lost between evaluations. An "our" variable is kept, but you need to use it with the special package name `RakuDroidHelper`, e.g. `$RakuDroidHelper::my-var` at 2nd and forth times.
 
 This is the second version of the PoC. It brings the Android system bindings. The variable `$RakuDroidHelper::main-activity` holds the activity object displayed and you can use the pre-filled text just by clicking "Eval" to display an Android Toast. More info will be given later in a separate file on how bindings are done and their use.
 
